@@ -72,6 +72,7 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {console.log('Ad schedules for:', ad.title, ad.schedules)}
                 {ad.schedules && ad.schedules.length > 0 ? (
                   <div>
                     {ad.schedules.map((schedule, index) => (

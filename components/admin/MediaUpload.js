@@ -22,17 +22,17 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
     
     // Validate file type
     if (fileType === 'image' && !validImageTypes.includes(fileExtension)) {
-      setError(`Invalid image format. Supported formats: ${validImageTypes.join(', ')}`);
+      setError(`Formato de imagen inválido. Formatos soportados: ${validImageTypes.join(', ')}`);
       return;
     } else if (fileType === 'video' && !validVideoTypes.includes(fileExtension)) {
-      setError(`Invalid video format. Supported formats: ${validVideoTypes.join(', ')}`);
+      setError(`Formato de video inválido. Formatos soportados: ${validVideoTypes.join(', ')}`);
       return;
     }
     
     // Validate file size (10MB max)
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
     if (file.size > MAX_SIZE) {
-      setError('File size exceeds 10MB limit');
+      setError('El tamaño del archivo excede el límite de 10MB');
       return;
     }
 
@@ -68,7 +68,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
       }
     } catch (err) {
       console.error('Error uploading file:', err);
-      setError('Failed to upload file. Please try again.');
+      setError('Error al subir el archivo. Por favor, inténtelo de nuevo.');
     } finally {
       setUploading(false);
     }
@@ -92,7 +92,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
   return (
     <div className="mb-6">
       <label className="block text-gray-700 text-sm font-bold mb-2">
-        Media
+        Multimedia
       </label>
       
       {mediaUrl ? (
@@ -109,7 +109,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
                 <img 
                   className="max-w-full max-h-[300px] object-contain mb-2" 
                   src={mediaUrl} 
-                  alt="Advertisement preview" 
+                  alt="Vista previa del anuncio" 
                 />
               )}
               <button
@@ -117,7 +117,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
                 onClick={handleRemoveMedia}
                 className="mt-2 text-red-600 hover:text-red-800"
               >
-                Remove Media
+                Eliminar multimedia
               </button>
             </div>
           </div>
@@ -131,10 +131,10 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                 </svg>
                 <p className="mb-2 text-sm text-gray-500">
-                  <span className="font-semibold">Click to upload</span> or drag and drop
+                  <span className="font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
                 <p className="text-xs text-gray-500">
-                  Images (PNG, JPG, GIF, WebP) or Videos (MP4, WebM, OGG)
+                  Imágenes (PNG, JPG, GIF, WebP) o Videos (MP4, WebM, OGG)
                 </p>
               </div>
               <input 
@@ -152,7 +152,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
       
       {uploading && (
         <div className="mb-4">
-          <p className="text-blue-500">Uploading...</p>
+          <p className="text-blue-500">Subiendo...</p>
         </div>
       )}
       

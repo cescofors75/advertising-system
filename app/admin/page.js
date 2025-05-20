@@ -18,6 +18,8 @@ export default function AdminPage() {
   const fetchAdvertisements = async () => {
     try {
       setLoading(true);
+      console.log('Fetching advertisements and schedules...');
+      
       const { data, error } = await supabase
         .from('advertisements')
         .select('*, schedules(*)') // Join with schedules table
@@ -25,7 +27,16 @@ export default function AdminPage() {
 
       if (error) throw error;
       
-      setAdvertisements(data || []);
+      console.log('Fetched data:', data);
+      
+      // Make sure schedules are properly formatted in the ads
+      const formattedData = data?.map(ad => ({
+        ...ad,
+        schedules: Array.isArray(ad.schedules) ? ad.schedules : []
+      })) || [];
+      
+      console.log('Formatted ad data with schedules:', formattedData);
+      setAdvertisements(formattedData);
     } catch (err) {
       console.error('Error fetching advertisements:', err);
       setError('Failed to load advertisements');

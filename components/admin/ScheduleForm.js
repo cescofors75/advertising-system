@@ -13,26 +13,52 @@ export default function ScheduleForm({ initialSchedules = [], onChange }) {
   // Helper function to combine date and time strings into a single ISO string
   const combineDateAndTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return null;
-    const [year, month, day] = dateStr.split('-');
-    const [hours, minutes] = timeStr.split(':');
-    return new Date(year, month - 1, day, hours, minutes).toISOString();
+    
+    try {
+      const [year, month, day] = dateStr.split('-');
+      const [hours, minutes] = timeStr.split(':');
+      
+      // Create date object and ensure it's valid
+      const dateObj = new Date(year, month - 1, day, hours, minutes);
+      
+      if (isNaN(dateObj.getTime())) {
+        console.error('Invalid date created:', { dateStr, timeStr, dateObj });
+        throw new Error('Invalid date');
+      }
+      
+      console.log('Created datetime:', dateObj.toISOString());
+      return dateObj.toISOString();
+    } catch (error) {
+      console.error('Error creating date:', error, { dateStr, timeStr });
+      throw new Error(`Invalid date format: ${dateStr} ${timeStr}`);
+    }
   };
 
   const handleAddSchedule = () => {
     setError(null);
+    console.log('Adding schedule with inputs:', { startDate, startTime, endDate, endTime });
     
     // Validate inputs
     if (!startDate || !startTime || !endDate || !endTime) {
-      setError('Please fill in all schedule fields');
+      setError('Por favor complete todos los campos de programación');
       return;
     }
     
-    const startDateTime = combineDateAndTime(startDate, startTime);
-    const endDateTime = combineDateAndTime(endDate, endTime);
-    
-    // Validate start time is before end time
-    if (new Date(startDateTime) >= new Date(endDateTime)) {
-      setError('End time must be after start time');
+    let startDateTime, endDateTime;
+    try {
+      startDateTime = combineDateAndTime(startDate, startTime);
+      endDateTime = combineDateAndTime(endDate, endTime);
+      
+      console.log('Created date objects:', { startDateTime, endDateTime });
+      
+      // Validate start time is before end time
+      if (new Date(startDateTime) >= new Date(endDateTime)) {
+        setError('La hora de fin debe ser posterior a la hora de inicio');
+        return;
+      }
+    } catch (err) {
+      setError(err.message || 'Error creating date objects');
+      console.error('Error in date processing:', err);
       return;
     }
     
@@ -81,12 +107,12 @@ export default function ScheduleForm({ initialSchedules = [], onChange }) {
 
   return (
     <div className="mb-6">
-      <h3 className="text-lg font-semibold mb-4">Schedule</h3>
+      <h3 className="text-lg font-semibold mb-4">Programación</h3>
       
       {/* Schedule List */}
       {schedules.length > 0 ? (
         <div className="mb-4">
-          <h4 className="text-sm font-medium mb-2">Current Schedules:</h4>
+          <h4 className="text-sm font-medium mb-2">Programaciones actuales:</h4>
           <ul className="bg-gray-50 rounded-md p-2">
             {schedules.map((schedule) => (
               <li 
@@ -101,66 +127,66 @@ export default function ScheduleForm({ initialSchedules = [], onChange }) {
                   onClick={() => handleRemoveSchedule(schedule.id)}
                   className="text-red-500 hover:text-red-700 text-sm"
                 >
-                  Remove
+                  Eliminar
                 </button>
               </li>
             ))}
           </ul>
         </div>
       ) : (
-        <p className="text-sm text-gray-500 mb-4">No schedules set. Add one below.</p>
+        <p className="text-sm text-gray-500 mb-4">No hay programaciones establecidas. Añade una a continuación.</p>
       )}
       
       {/* Add New Schedule Form */}
       <div className="border p-4 rounded-md bg-gray-50">
-        <h4 className="text-sm font-medium mb-3">Add New Schedule</h4>
+        <h4 className="text-sm font-medium mb-3">Añadir Nueva Programación</h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Start Date
+              Fecha de inicio
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md text-black"
             />
           </div>
           
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Start Time
+              Hora de inicio
             </label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md text-black"
             />
           </div>
           
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              End Date
+              Fecha de fin
             </label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md text-black"
             />
           </div>
           
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              End Time
+              Hora de fin
             </label>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md text-black"
             />
           </div>
         </div>
@@ -177,7 +203,7 @@ export default function ScheduleForm({ initialSchedules = [], onChange }) {
             onClick={handleAddSchedule}
             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm"
           >
-            Add Schedule
+            Añadir Programación
           </button>
         </div>
       </div>
