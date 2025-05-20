@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ScheduleForm({ initialSchedules = [], onChange }) {
   const [schedules, setSchedules] = useState(initialSchedules);
@@ -9,6 +9,12 @@ export default function ScheduleForm({ initialSchedules = [], onChange }) {
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
   const [error, setError] = useState(null);
+
+  // Actualizar schedules cuando initialSchedules cambie
+  useEffect(() => {
+    console.log('initialSchedules actualizados:', initialSchedules);
+    setSchedules(initialSchedules || []);
+  }, [initialSchedules]);
 
   // Función auxiliar para combinar cadenas de fecha y hora en una sola cadena ISO
   const combineDateAndTime = (dateStr, timeStr) => {
