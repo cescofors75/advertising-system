@@ -12,8 +12,8 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
     media_url: null,
     media_type: 'image',
     active: true,
-    website_url: '', // New field
-    show_qr_code: false, // New field
+    website_url: '', // Nuevo campo
+    show_qr_code: false, // Nuevo campo
   };
 
   const [formData, setFormData] = useState(ad || emptyAd);
@@ -55,14 +55,14 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
     try {
       let adId = ad?.id;
       
-      // Validate form inputs
+      // Validar entradas del formulario
       if (!formData.title.trim()) {
         throw new Error('El título del anuncio es obligatorio');
       }
       
-      // Insert or update the advertisement
+      // Insertar o actualizar el anuncio
       if (adId) {
-        // Update existing ad
+        // Actualizar anuncio existente
         const { error } = await supabase
           .from('advertisements')
           .update({
@@ -71,14 +71,14 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
             media_url: formData.media_url,
             media_type: formData.media_type,
             active: formData.active,
-            website_url: formData.website_url, // Update website_url
-            show_qr_code: formData.show_qr_code, // Update show_qr_code
+            website_url: formData.website_url, // Actualizar URL del sitio web
+            show_qr_code: formData.show_qr_code, // Actualizar mostrar código QR
           })
           .eq('id', adId);
           
         if (error) throw error;
       } else {
-        // Insert new ad
+        // Insertar nuevo anuncio
         const { data, error } = await supabase
           .from('advertisements')
           .insert({
@@ -87,8 +87,8 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
             media_url: formData.media_url,
             media_type: formData.media_type,
             active: formData.active,
-            website_url: formData.website_url, // Insert website_url
-            show_qr_code: formData.show_qr_code, // Insert show_qr_code
+            website_url: formData.website_url, // Insertar URL del sitio web
+            show_qr_code: formData.show_qr_code, // Insertar mostrar código QR
           })
           .select();
           
@@ -96,30 +96,30 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         adId = data[0].id;
       }
       
-      // Handle schedules
-      console.log('Processing schedules:', schedules);
+      // Manejar programaciones
+      console.log('Procesando programaciones:', schedules);
       if (schedules.length > 0) {
-        // Delete existing schedules
+        // Eliminar programaciones existentes
         if (adId) {
-          console.log('Deleting existing schedules for advertisement ID:', adId);
+          console.log('Eliminando programaciones existentes para el ID de anuncio:', adId);
           const { error: deleteError } = await supabase
             .from('schedules')
             .delete()
             .eq('advertisement_id', adId);
             
           if (deleteError) {
-            console.error('Error deleting existing schedules:', deleteError);
+            console.error('Error al eliminar programaciones existentes:', deleteError);
             throw deleteError;
           }
         }
         
-        // Insert new schedules
+        // Insertar nuevas programaciones
         const schedulesToInsert = schedules.map(schedule => {
-          // Ensure dates are properly formatted for PostgreSQL
+          // Asegurar que las fechas estén correctamente formateadas para PostgreSQL
           const startTime = new Date(schedule.start_time).toISOString();
           const endTime = new Date(schedule.end_time).toISOString();
           
-          console.log('Schedule to insert:', {
+          console.log('Programación a insertar:', {
             adId,
             startTime,
             endTime
@@ -132,21 +132,21 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           };
         });
         
-        console.log('Inserting schedules:', schedulesToInsert);
+        console.log('Insertando programaciones:', schedulesToInsert);
         const { data: insertedSchedules, error: scheduleError } = await supabase
           .from('schedules')
           .insert(schedulesToInsert)
-          .select(); // Add select to return the inserted data
+          .select(); // Añadir select para devolver los datos insertados
           
         if (scheduleError) {
-          console.error('Error inserting schedules:', scheduleError);
+          console.error('Error al insertar programaciones:', scheduleError);
           throw scheduleError;
         }
         
-        console.log('Successfully inserted schedules:', insertedSchedules);
+        console.log('Programaciones insertadas exitosamente:', insertedSchedules);
         
-        // Add verification logging
-        console.log('Final state after schedule insert:');
+        // Añadir registro de verificación
+        console.log('Estado final después de insertar programación:');
         const { data: verifyAd, error: verifyError } = await supabase
           .from('advertisements')
           .select('*, schedules(*)')
@@ -154,20 +154,20 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           .single();
 
         if (verifyError) {
-          console.error('Error verifying ad data:', verifyError);
+          console.error('Error al verificar datos del anuncio:', verifyError);
         } else {
-          console.log('Verified ad with schedules:', verifyAd);
+          console.log('Anuncio verificado con programaciones:', verifyAd);
         }
       } else {
-        console.log('No schedules to insert');
+        console.log('No hay programaciones para insertar');
       }
       
-      // Call the onSubmit callback
+      // Llamar al callback onSubmit
       if (onSubmit) {
         onSubmit();
       }
     } catch (err) {
-      console.error('Error saving advertisement:', err);
+      console.error('Error al guardar anuncio:', err);
       setError(err.message || 'Error al guardar el anuncio');
     } finally {
       setIsSubmitting(false);
@@ -177,13 +177,13 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
   return (
     <form onSubmit={handleSubmit}>
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-black px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
       
       <div className="mb-4">
-        <label className="block text-black-700 text-sm font-bold mb-2" htmlFor="title">
+        <label className="block text-black text-sm font-bold mb-2" htmlFor="title">
           Título <span className="text-red-500">*</span>
         </label>
         <input
@@ -192,29 +192,29 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           type="text"
           value={formData.title}
           onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700 leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="Advertisement Title"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-black leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Título del anuncio"
         />
       </div>
       
       <div className="mb-4">
-        <label className="block text-black-700 text-sm font-bold mb-2" htmlFor="description">
-          Description
+        <label className="block text-black text-sm font-bold mb-2" htmlFor="description">
+          Descripción
         </label>
         <textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700 leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="Advertisement Description"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-black leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Descripción del anuncio"
           rows="4"
         />
       </div>
-      {/* Website URL Field */}
+      {/* Campo URL del sitio web */}
       <div className="mb-4">
-        <label className="block text-black-700 text-sm font-bold mb-2" htmlFor="website_url">
-          Website URL
+        <label className="block text-black text-sm font-bold mb-2" htmlFor="website_url">
+          URL del sitio web
         </label>
         <input
           id="website_url"
@@ -222,12 +222,12 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           type="url"
           value={formData.website_url || ""}
           onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700 leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="https://example.com"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-black leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="https://ejemplo.com"
         />
       </div>
 
-      {/* QR Code Checkbox */}
+      {/* Casilla de verificación para Código QR */}
       <div className="mb-4">
         <label className="flex items-center">
           <input
@@ -237,16 +237,16 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
             onChange={handleChange}
             className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
           />
-          <span className="ml-2 text-black-700">Show QR Code (overlaid on image)</span>
+          <span className="ml-2 text-black">Mostrar Código QR (superpuesto en la imagen)</span>
         </label>
 
         {formData.show_qr_code && formData.website_url && (
-          <div className="mt-4 p-4 border rounded-md bg-black-50">
-            <p className="text-sm text-black-600 mb-2">QR Code Preview:</p>
+          <div className="mt-4 p-4 border rounded-md bg-gray-50">
+            <p className="text-sm text-black mb-2">Vista previa del Código QR:</p>
             <div className="flex justify-center">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.website_url)}`}
-                alt="QR Code"
+                alt="Código QR"
                 className="border"
               />
             </div>
@@ -254,7 +254,7 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         )}
       </div>
       
-      {/* Media Upload Component */}
+      {/* Componente de carga de multimedia */}
       <MediaUpload
         initialUrl={formData.media_url}
         initialType={formData.media_type}
@@ -270,11 +270,11 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
             onChange={handleChange}
             className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
           />
-          <span className="ml-2 text-black-700">Active (visible on display)</span>
+          <span className="ml-2 text-black">Activo (visible en pantalla)</span>
         </label>
       </div>
       
-      {/* Schedule Form Component */}
+      {/* Componente de formulario de programación */}
       <ScheduleForm
         initialSchedules={schedules}
         onChange={handleScheduleChange}
@@ -284,17 +284,17 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         <button
           type="button"
           onClick={onCancel}
-          className="bg-black-300 hover:bg-black-400 text-black-800 px-4 py-2 rounded-md"
+          className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md"
           disabled={isSubmitting}
         >
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Saving...' : ad?.id ? 'Update Advertisement' : 'Create Advertisement'}
+          {isSubmitting ? 'Guardando...' : ad?.id ? 'Actualizar Anuncio' : 'Crear Anuncio'}
         </button>
       </div>
     </form>

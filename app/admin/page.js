@@ -14,32 +14,32 @@ export default function AdminPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [previewAd, setPreviewAd] = useState(null);
 
-  // Fetch all advertisements
+  // Obtener todos los anuncios
   const fetchAdvertisements = async () => {
     try {
       setLoading(true);
-      console.log('Fetching advertisements and schedules...');
+      console.log('Obteniendo anuncios y programaciones...');
       
       const { data, error } = await supabase
         .from('advertisements')
-        .select('*, schedules(*)') // Join with schedules table
+        .select('*, schedules(*)') // Unión con la tabla de programaciones
         .order('id');
 
       if (error) throw error;
       
-      console.log('Fetched data:', data);
+      console.log('Datos obtenidos:', data);
       
-      // Make sure schedules are properly formatted in the ads
+      // Asegurar que las programaciones estén correctamente formateadas
       const formattedData = data?.map(ad => ({
         ...ad,
         schedules: Array.isArray(ad.schedules) ? ad.schedules : []
       })) || [];
       
-      console.log('Formatted ad data with schedules:', formattedData);
+      console.log('Datos de anuncios formateados con programaciones:', formattedData);
       setAdvertisements(formattedData);
     } catch (err) {
-      console.error('Error fetching advertisements:', err);
-      setError('Failed to load advertisements');
+      console.error('Error al obtener anuncios:', err);
+      setError('Error al cargar los anuncios');
     } finally {
       setLoading(false);
     }
@@ -55,15 +55,15 @@ export default function AdminPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this advertisement?')) {
+    if (window.confirm('¿Está seguro que desea eliminar este anuncio?')) {
       try {
-        // Delete related schedules first
+        // Eliminar primero las programaciones relacionadas
         await supabase
           .from('schedules')
           .delete()
           .eq('advertisement_id', id);
           
-        // Then delete the advertisement
+        // Luego eliminar el anuncio
         const { error } = await supabase
           .from('advertisements')
           .delete()
@@ -71,9 +71,9 @@ export default function AdminPage() {
           
         if (error) throw error;
         
-        // If the ad has media, delete it from storage
+        // Si el anuncio tiene multimedia, eliminarlo del almacenamiento
         if (currentAd && currentAd.media_url) {
-          // Extract the file path from the URL
+          // Extraer la ruta del archivo de la URL
           const urlParts = currentAd.media_url.split('/');
           const fileName = urlParts[urlParts.length - 1];
           
@@ -82,14 +82,14 @@ export default function AdminPage() {
             .from('advertisements')
             .remove([fileName]);
             
-          if (storageError) console.error('Error deleting file:', storageError);
+          if (storageError) console.error('Error al eliminar archivo:', storageError);
         }
         
-        // Refresh the list
+        // Actualizar la lista
         fetchAdvertisements();
       } catch (err) {
-        console.error('Error deleting advertisement:', err);
-        alert('Failed to delete advertisement');
+        console.error('Error al eliminar anuncio:', err);
+        alert('Error al eliminar el anuncio');
       }
     }
   };
@@ -118,19 +118,19 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Advertisement Management System</h1>
+        <h1 className="text-3xl font-bold mb-6 text-black">Sistema de Gestión de Anuncios</h1>
         
-        {/* Error message */}
+        {/* Mensaje de error */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-black px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
         
         {isEditing ? (
           <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {currentAd?.id ? 'Edit Advertisement' : 'Add New Advertisement'}
+            <h2 className="text-xl font-semibold mb-4 text-black">
+              {currentAd?.id ? 'Editar Anuncio' : 'Añadir Nuevo Anuncio'}
             </h2>
             <AdForm 
               ad={currentAd} 
@@ -144,15 +144,15 @@ export default function AdminPage() {
               onClick={() => setIsEditing(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
             >
-              Add New Advertisement
+              Añadir Nuevo Anuncio
             </button>
           </div>
         )}
         
-        {/* Advertisement list */}
+        {/* Lista de anuncios */}
         {loading ? (
           <div className="text-center py-10">
-            <p className="text-gray-500">Loading advertisements...</p>
+            <p className="text-black">Cargando anuncios...</p>
           </div>
         ) : (
           <AdList 
@@ -163,21 +163,21 @@ export default function AdminPage() {
           />
         )}
         
-        {/* Preview Modal */}
+        {/* Modal de Vista Previa */}
         {showPreview && previewAd && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
               <div className="flex justify-between items-center border-b p-4">
-                <h3 className="text-xl font-bold">Preview: {previewAd.title}</h3>
+                <h3 className="text-xl font-bold text-black">Vista previa: {previewAd.title}</h3>
                 <button 
                   onClick={closePreview}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-black hover:text-gray-700"
                 >
                   ✕
                 </button>
               </div>
               <div className="p-4 flex flex-col items-center">
-                <h2 className="text-2xl font-bold mb-4">{previewAd.title}</h2>
+                <h2 className="text-2xl font-bold mb-4 text-black">{previewAd.title}</h2>
                 
                 <div className="my-4 w-full flex justify-center">
                   {previewAd.media_url ? (
@@ -196,21 +196,21 @@ export default function AdminPage() {
                     )
                   ) : (
                     <div className="w-full max-w-lg h-48 bg-gray-200 flex items-center justify-center rounded">
-                      <p className="text-gray-500">No media available</p>
+                      <p className="text-black">No hay contenido multimedia disponible</p>
                     </div>
                   )}
                 </div>
                 
-                <p className="text-gray-700 max-w-2xl text-center mt-4">
+                <p className="text-black max-w-2xl text-center mt-4">
                   {previewAd.description}
                 </p>
               </div>
               <div className="border-t p-4 flex justify-end">
                 <button 
                   onClick={closePreview}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md"
+                  className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md"
                 >
-                  Close Preview
+                  Cerrar Vista Previa
                 </button>
               </div>
             </div>

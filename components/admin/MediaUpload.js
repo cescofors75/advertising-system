@@ -14,13 +14,13 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file type and size
+    // Verificar tipo y tamaño del archivo
     const fileType = file.type.split('/')[0]; // 'image' or 'video'
     const fileExtension = file.name.split('.').pop().toLowerCase();
     const validImageTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
     const validVideoTypes = ['mp4', 'webm', 'ogg'];
     
-    // Validate file type
+    // Validar tipo de archivo
     if (fileType === 'image' && !validImageTypes.includes(fileExtension)) {
       setError(`Formato de imagen inválido. Formatos soportados: ${validImageTypes.join(', ')}`);
       return;
@@ -29,7 +29,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
       return;
     }
     
-    // Validate file size (10MB max)
+    // Validar tamaño del archivo (máximo 10MB)
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
     if (file.size > MAX_SIZE) {
       setError('El tamaño del archivo excede el límite de 10MB');
@@ -40,11 +40,11 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
     setError(null);
 
     try {
-      // Create a unique file name
+      // Crear un nombre de archivo único
       const timestamp = new Date().getTime();
       const fileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
       
-      // Upload file to Supabase Storage
+      // Subir archivo al almacenamiento de Supabase
       const { data, error: uploadError } = await supabase
         .storage
         .from('advertisements')
@@ -52,22 +52,22 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
         
       if (uploadError) throw uploadError;
       
-      // Get public URL for the uploaded file
+      // Obtener URL pública para el archivo subido
       const { data: { publicUrl } } = supabase
         .storage
         .from('advertisements')
         .getPublicUrl(fileName);
       
-      // Set the media URL and type
+      // Establecer la URL y el tipo de multimedia
       setMediaUrl(publicUrl);
       setMediaType(fileType);
       
-      // Call the parent's callback with the URL and type
+      // Llamar al callback del padre con la URL y el tipo
       if (onUpload) {
         onUpload(publicUrl, fileType);
       }
     } catch (err) {
-      console.error('Error uploading file:', err);
+      console.error('Error al subir archivo:', err);
       setError('Error al subir el archivo. Por favor, inténtelo de nuevo.');
     } finally {
       setUploading(false);
@@ -78,12 +78,12 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
     setMediaUrl(null);
     setMediaType('image');
     
-    // Call the parent's callback with null values
+    // Llamar al callback del padre con valores nulos
     if (onUpload) {
       onUpload(null, 'image');
     }
     
-    // Reset the file input
+    // Reiniciar el input de archivo
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -91,10 +91,11 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
 
   return (
     <div className="mb-6">
-      <label className="block text-gray-700 text-sm font-bold mb-2">
+      <label className="block text-black text-sm font-bold mb-2">
         Multimedia
       </label>
       
+      {/* Visualización del archivo multimedia */}
       {mediaUrl ? (
         <div className="mb-4">
           <div className="bg-gray-100 p-4 rounded-lg mb-2">
@@ -125,15 +126,16 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
       ) : (
         <div className="mb-4">
           <div className="flex items-center justify-center w-full">
+            {/* Área para arrastrar y soltar archivos */}
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                 </svg>
-                <p className="mb-2 text-sm text-gray-500">
+                <p className="mb-2 text-sm text-black">
                   <span className="font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-black">
                   Imágenes (PNG, JPG, GIF, WebP) o Videos (MP4, WebM, OGG)
                 </p>
               </div>
@@ -150,15 +152,17 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
         </div>
       )}
       
+      {/* Indicador de carga */}
       {uploading && (
         <div className="mb-4">
-          <p className="text-blue-500">Subiendo...</p>
+          <p className="text-black">Subiendo...</p>
         </div>
       )}
       
+      {/* Mensaje de error */}
       {error && (
         <div className="mb-4">
-          <p className="text-red-500 text-sm">{error}</p>
+          <p className="text-black text-sm">{error}</p>
         </div>
       )}
     </div>
