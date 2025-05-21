@@ -6,11 +6,11 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Digital Advertising System
+            Sistema de Publicidad Digital
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            A comprehensive solution for managing and displaying digital advertisements
-            on screens in public spaces, retail stores, and waiting areas.
+            Una solución completa para gestionar y mostrar anuncios digitales
+            en pantallas. Taxis,  Hoteles, Restaurantes.
           </p>
         </div>
 
@@ -33,37 +33,37 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">Display System</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Sistema de Visualización</h2>
               <p className="text-gray-600 mb-8">
-                The public-facing component that showcases your advertisements in a 
-                fullscreen, automated slideshow. Ideal for public displays and digital 
-                signage with support for both images and videos.
+                El componente de cara al público que muestra sus anuncios en una 
+                presentación automática a pantalla completa. Ideal para pantallas públicas y 
+                señalización digital con soporte para imágenes y vídeos.
               </p>
               <ul className="mb-8 space-y-2 text-gray-600">
                 <li className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Automatic rotation between advertisements
+                  Rotación automática entre anuncios
                 </li>
                 <li className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Support for images and videos
+                  Soporte para imágenes y vídeos
                 </li>
                 <li className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Responsive design for any screen size
+                  Diseño adaptable para cualquier tamaño de pantalla
                 </li>
               </ul>
               <Link 
                 href="/display" 
                 className="inline-block w-full text-center py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
               >
-                Launch Display System
+                Iniciar Sistema de Visualización
               </Link>
             </div>
           </div>
@@ -86,37 +86,37 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">Admin Panel</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Panel de Administración</h2>
               <p className="text-gray-600 mb-8">
-                The management interface that allows you to create, edit, schedule, and 
-                delete advertisements. Upload media, set display times, and preview how 
-                your ads will look on screen.
+                La interfaz de gestión que le permite crear, editar, programar y 
+                eliminar anuncios. Suba contenido multimedia, configure tiempos de visualización y previsualice 
+                cómo se verán sus anuncios en pantalla.
               </p>
               <ul className="mb-8 space-y-2 text-gray-600">
                 <li className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Complete ad management functionality
+                  Funcionalidad completa de gestión de anuncios
                 </li>
                 <li className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Media upload and scheduling capabilities
+                  Capacidades de subida y programación de contenido
                 </li>
                 <li className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Preview and management tools
+                  Herramientas de previsualización y gestión
                 </li>
               </ul>
               <Link 
                 href="/admin" 
                 className="inline-block w-full text-center py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
               >
-                Access Admin Panel
+                Acceder al Panel de Administración
               </Link>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function Home() {
         
         <div className="mt-16 text-center">
           <p className="text-gray-500">
-            Digital Advertising System | Created with Next.js and Supabase
+            Sistema de Publicidad Digital | Creado con Next.js y Supabase
           </p>
         </div>
       </div>

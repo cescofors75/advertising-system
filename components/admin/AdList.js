@@ -17,7 +17,7 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
         <thead className="bg-gray-50">
           <tr>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-              Title
+              Título
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
               Media
@@ -26,7 +26,7 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
               Status
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-              Schedule
+              Horarios
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
               Actions
@@ -82,28 +82,28 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
                     ))}
                   </div>
                 ) : (
-                  <span>No schedule</span>
+                  <span>Sin horarios</span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div className="flex space-x-2">
                   <button
                     onClick={() => onPreview(ad)}
-                    className="text-black hover:text-indigo-900"
+                    className="text-indigo-500 hover:text-indigo-900"
                   >
                     Preview
                   </button>
                   <button
                     onClick={() => onEdit(ad)}
-                    className="text-black hover:text-blue-900"
+                    className="text-blue-500 hover:text-blue-900"
                   >
-                    Edit
+                    Editar
                   </button>
                   <button
                     onClick={() => onDelete(ad.id)}
-                    className="text-black hover:text-red-900"
+                    className="text-red-500 hover:text-red-900"
                   >
-                    Delete
+                    Borrar
                   </button>
                 </div>
               </td>
