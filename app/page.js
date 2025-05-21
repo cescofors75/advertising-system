@@ -124,7 +124,7 @@ export default function Home() {
         
         <div className="mt-16 text-center">
           <p className="text-gray-500">
-            Sistema de Publicidad Digital | Creado con Next.js y Supabase
+            Sistema de Publicidad Digital | by VisitTech
           </p>
         </div>
       </div>
