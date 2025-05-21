@@ -162,7 +162,7 @@ export default function DisplayPage() {
                   />
                   {/* QR Code overlay */}
                   {currentAd.website_url && currentAd.show_qr_code && (
-                    <div className="absolute bottom-10 right-10 bg-white p-2 rounded shadow-lg z-20">
+                    <div className="absolute bottom-14 right-2 bg-white p-2 rounded shadow-lg z-20">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentAd.website_url)}`}
                         alt="QR Code"
