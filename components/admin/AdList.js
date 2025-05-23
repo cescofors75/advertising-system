@@ -2,7 +2,49 @@
 
 import React from 'react';
 
+// Time slot definitions
+const TIME_SLOTS = {
+  morning: { name: 'Día', startHour: 0, endHour: 8, color: 'blue' },
+  afternoon: { name: 'Tarde', startHour: 8, endHour: 16, color: 'green' },
+  night: { name: 'Noche', startHour: 16, endHour: 24, color: 'purple' }
+};
+
 export default function AdList({ advertisements, onEdit, onDelete, onPreview }) {
+  // Render time slot badges for an ad
+  const renderTimeSlotBadges = (ad) => {
+    const slots = [];
+    
+    if (ad.time_slot_morning) {
+      slots.push({
+        key: 'morning',
+        ...TIME_SLOTS.morning
+      });
+    }
+    
+    if (ad.time_slot_afternoon) {
+      slots.push({
+        key: 'afternoon',
+        ...TIME_SLOTS.afternoon
+      });
+    }
+    
+    if (ad.time_slot_night) {
+      slots.push({
+        key: 'night',
+        ...TIME_SLOTS.night
+      });
+    }
+    
+    return slots.map(slot => (
+      <span 
+        key={slot.key} 
+        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-1 bg-${slot.color}-100 text-${slot.color}-800`}
+      >
+        {slot.name}
+      </span>
+    ));
+  };
+
   if (!advertisements || advertisements.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -26,7 +68,7 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
               Status
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-              Horarios
+              Franjas
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
               Actions
@@ -66,23 +108,18 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  ad.active ? 'bg-green-100 text-black' : 'bg-gray-100 text-black'
+                  ad.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {ad.active ? 'Active' : 'Inactive'}
+                  {ad.active ? 'Activo' : 'Inactivo'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
-                {console.log('Programaciones para el anuncio:', ad.title, ad.schedules)}
-                {ad.schedules && ad.schedules.length > 0 ? (
-                  <div>
-                    {ad.schedules.map((schedule, index) => (
-                      <div key={index} className="text-xs">
-                        {new Date(schedule.start_time).toLocaleString()} - {new Date(schedule.end_time).toLocaleString()}
-                      </div>
-                    ))}
+                {ad.time_slot_morning || ad.time_slot_afternoon || ad.time_slot_night ? (
+                  <div className="flex flex-wrap gap-1">
+                    {renderTimeSlotBadges(ad)}
                   </div>
                 ) : (
-                  <span>Sin horarios</span>
+                  <span className="text-xs text-gray-500">Sin franjas</span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -114,4 +151,3 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
     </div>
   );
 }
-

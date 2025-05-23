@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabaseClient';
 import AdList from '@/components/admin/AdList';
 import AdForm from '@/components/admin/AdForm';
+import TimeSlotTabs from '@/components/admin/TimeSlotTabs';
 
 export default function AdminPage() {
   const [advertisements, setAdvertisements] = useState([]);
+  const [filteredAds, setFilteredAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -18,25 +20,18 @@ export default function AdminPage() {
   const fetchAdvertisements = async () => {
     try {
       setLoading(true);
-      console.log('Obteniendo anuncios y programaciones...');
+      console.log('Obteniendo anuncios...');
       
       const { data, error } = await supabase
         .from('advertisements')
-        .select('*, schedules(*)') // Unión con la tabla de programaciones
+        .select('*')
         .order('id');
 
       if (error) throw error;
       
       console.log('Datos obtenidos:', data);
       
-      // Asegurar que las programaciones estén correctamente formateadas
-      const formattedData = data?.map(ad => ({
-        ...ad,
-        schedules: Array.isArray(ad.schedules) ? ad.schedules : []
-      })) || [];
-      
-      console.log('Datos de anuncios formateados con programaciones:', formattedData);
-      setAdvertisements(formattedData);
+      setAdvertisements(data || []);
     } catch (err) {
       console.error('Error al obtener anuncios:', err);
       setError('Error al cargar los anuncios');
@@ -57,13 +52,7 @@ export default function AdminPage() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Está seguro que desea eliminar este anuncio?')) {
       try {
-        // Eliminar primero las programaciones relacionadas
-        await supabase
-          .from('schedules')
-          .delete()
-          .eq('advertisement_id', id);
-          
-        // Luego eliminar el anuncio
+        // Eliminar el anuncio
         const { error } = await supabase
           .from('advertisements')
           .delete()
@@ -102,7 +91,11 @@ export default function AdminPage() {
   const handleFormSubmit = () => {
     setIsEditing(false);
     setCurrentAd(null);
-    fetchAdvertisements();
+    console.log("Form submitted successfully, refreshing advertisements list...");
+    // Use setTimeout to ensure the UI updates before fetching
+    setTimeout(() => {
+      fetchAdvertisements();
+    }, 500);
   };
 
   const handlePreview = (ad) => {
@@ -113,6 +106,11 @@ export default function AdminPage() {
   const closePreview = () => {
     setShowPreview(false);
     setPreviewAd(null);
+  };
+  
+  // Handle filtered ads from time slot tabs
+  const handleSelectedAdsChange = (filteredAdsList) => {
+    setFilteredAds(filteredAdsList);
   };
 
   return (
@@ -149,18 +147,28 @@ export default function AdminPage() {
           </div>
         )}
         
-        {/* Lista de anuncios */}
+        {/* Time Slot Tabs */}
+        {!loading && !isEditing && (
+          <TimeSlotTabs 
+            advertisements={advertisements}
+            onSelectedAdsChange={handleSelectedAdsChange}
+          />
+        )}
+        
+        {/* Lista de anuncios - Solo mostrar si hay anuncios filtrados y no estamos cargando */}
         {loading ? (
           <div className="text-center py-10">
             <p className="text-black">Cargando anuncios...</p>
           </div>
         ) : (
-          <AdList 
-            advertisements={advertisements} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete}
-            onPreview={handlePreview}
-          />
+          filteredAds.length > 0 ? (
+            <AdList 
+              advertisements={filteredAds} 
+              onEdit={handleEdit} 
+              onDelete={handleDelete}
+              onPreview={handlePreview}
+            />
+          ) : null // No mostrar nada si no hay anuncios filtrados
         )}
         
         {/* Modal de Vista Previa */}
@@ -220,4 +228,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

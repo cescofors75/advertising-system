@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabaseClient';
 import MediaUpload from './MediaUpload';
-import ScheduleForm from './ScheduleForm';
+
+// Time slot definitions (same as in other components)
+const TIME_SLOTS = {
+  morning: { name: 'Day', startHour: 0, endHour: 8, color: 'blue' },
+  afternoon: { name: 'Afternoon', startHour: 8, endHour: 16, color: 'green' },
+  night: { name: 'Night', startHour: 16, endHour: 24, color: 'purple' }
+};
 
 export default function AdForm({ ad, onCancel, onSubmit }) {
   const emptyAd = {
@@ -12,18 +18,31 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
     media_url: null,
     media_type: 'image',
     active: true,
-    website_url: '', // Nuevo campo
-    show_qr_code: false, // Nuevo campo
+    website_url: '',
+    show_qr_code: false,
+    // Add time slot fields directly to the ad object
+    time_slot_morning: false,
+    time_slot_afternoon: false,
+    time_slot_night: false
   };
 
   const [formData, setFormData] = useState(ad || emptyAd);
-  const [schedules, setSchedules] = useState([]);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState({
+    morning: false,
+    afternoon: false,
+    night: false
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Initialize time slots from ad data
   useEffect(() => {
-    if (ad?.schedules) {
-      setSchedules(ad.schedules);
+    if (ad) {
+      setSelectedTimeSlots({
+        morning: ad.time_slot_morning || false,
+        afternoon: ad.time_slot_afternoon || false,
+        night: ad.time_slot_night || false
+      });
     }
   }, [ad]);
 
@@ -43,14 +62,23 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
     });
   };
 
-  const handleScheduleChange = (newSchedules) => {
-    setSchedules(newSchedules);
+  // Handle time slot selection change
+  const handleTimeSlotChange = (slotKey) => {
+    // Toggle the selected state of the clicked time slot
+    setSelectedTimeSlots(prev => ({
+      ...prev,
+      [slotKey]: !prev[slotKey]
+    }));
+    console.log(`Time slot ${slotKey} toggled to ${!selectedTimeSlots[slotKey]}`);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    
+    console.log("Form submission started");
+    console.log("Selected time slots:", selectedTimeSlots);
     
     try {
       let adId = ad?.id;
@@ -60,115 +88,51 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         throw new Error('El título del anuncio es obligatorio');
       }
       
-      // Insertar o actualizar el anuncio
+      // Prepare ad data with time slot information directly in the ad record
+      const adData = {
+        title: formData.title,
+        description: formData.description,
+        media_url: formData.media_url,
+        media_type: formData.media_type,
+        active: formData.active,
+        website_url: formData.website_url,
+        show_qr_code: formData.show_qr_code,
+        // Add time slot fields
+        time_slot_morning: selectedTimeSlots.morning,
+        time_slot_afternoon: selectedTimeSlots.afternoon,
+        time_slot_night: selectedTimeSlots.night
+      };
+      
+      console.log("Saving ad with time slots:", adData);
+      
       if (adId) {
-        // Actualizar anuncio existente
+        // Update existing ad
         const { error } = await supabase
           .from('advertisements')
-          .update({
-            title: formData.title,
-            description: formData.description,
-            media_url: formData.media_url,
-            media_type: formData.media_type,
-            active: formData.active,
-            website_url: formData.website_url, // Actualizar URL del sitio web
-            show_qr_code: formData.show_qr_code, // Actualizar mostrar código QR
-          })
+          .update(adData)
           .eq('id', adId);
           
         if (error) throw error;
+        console.log("Ad updated successfully");
       } else {
-        // Insertar nuevo anuncio
+        // Insert new ad
         const { data, error } = await supabase
           .from('advertisements')
-          .insert({
-            title: formData.title,
-            description: formData.description,
-            media_url: formData.media_url,
-            media_type: formData.media_type,
-            active: formData.active,
-            website_url: formData.website_url, // Insertar URL del sitio web
-            show_qr_code: formData.show_qr_code, // Insertar mostrar código QR
-          })
+          .insert(adData)
           .select();
           
         if (error) throw error;
         adId = data[0].id;
+        console.log("New ad created with ID:", adId);
       }
       
-      // Manejar programaciones
-      console.log('Procesando programaciones:', schedules);
-      if (schedules.length > 0) {
-        // Eliminar programaciones existentes
-        if (adId) {
-          console.log('Eliminando programaciones existentes para el ID de anuncio:', adId);
-          const { error: deleteError } = await supabase
-            .from('schedules')
-            .delete()
-            .eq('advertisement_id', adId);
-            
-          if (deleteError) {
-            console.error('Error al eliminar programaciones existentes:', deleteError);
-            throw deleteError;
-          }
-        }
-        
-        // Insertar nuevas programaciones
-        const schedulesToInsert = schedules.map(schedule => {
-          // Asegurar que las fechas estén correctamente formateadas para PostgreSQL
-          const startTime = new Date(schedule.start_time).toISOString();
-          const endTime = new Date(schedule.end_time).toISOString();
-          
-          console.log('Programación a insertar:', {
-            adId,
-            startTime,
-            endTime
-          });
-          
-          return {
-            advertisement_id: adId,
-            start_time: startTime,
-            end_time: endTime,
-          };
-        });
-        
-        console.log('Insertando programaciones:', schedulesToInsert);
-        const { data: insertedSchedules, error: scheduleError } = await supabase
-          .from('schedules')
-          .insert(schedulesToInsert)
-          .select(); // Añadir select para devolver los datos insertados
-          
-        if (scheduleError) {
-          console.error('Error al insertar programaciones:', scheduleError);
-          throw scheduleError;
-        }
-        
-        console.log('Programaciones insertadas exitosamente:', insertedSchedules);
-        
-        // Añadir registro de verificación
-        console.log('Estado final después de insertar programación:');
-        const { data: verifyAd, error: verifyError } = await supabase
-          .from('advertisements')
-          .select('*, schedules(*)')
-          .eq('id', adId)
-          .single();
-
-        if (verifyError) {
-          console.error('Error al verificar datos del anuncio:', verifyError);
-        } else {
-          console.log('Anuncio verificado con programaciones:', verifyAd);
-        }
-      } else {
-        console.log('No hay programaciones para insertar');
-      }
-      
-      // Llamar al callback onSubmit
+      // Call onSubmit callback
       if (onSubmit) {
         onSubmit();
       }
     } catch (err) {
-      console.error('Error al guardar anuncio:', err);
-      setError(err.message || 'Error al guardar el anuncio');
+      console.error('Error saving ad:', err);
+      setError(err.message || 'Error saving the advertisement');
     } finally {
       setIsSubmitting(false);
     }
@@ -211,7 +175,7 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           rows="4"
         />
       </div>
-      {/* Campo URL del sitio web */}
+      
       <div className="mb-4">
         <label className="block text-black text-sm font-bold mb-2" htmlFor="website_url">
           URL del sitio web
@@ -227,7 +191,6 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         />
       </div>
 
-      {/* Casilla de verificación para Código QR */}
       <div className="mb-4">
         <label className="flex items-center">
           <input
@@ -254,7 +217,6 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         )}
       </div>
       
-      {/* Componente de carga de multimedia */}
       <MediaUpload
         initialUrl={formData.media_url}
         initialType={formData.media_type}
@@ -274,11 +236,50 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         </label>
       </div>
       
-      {/* Componente de formulario de programación */}
-      <ScheduleForm
-        initialSchedules={schedules}
-        onChange={handleScheduleChange}
-      />
+      {/* Time Slot Selection */}
+      <div className="mb-6 bg-gray-50 p-5 rounded-md border border-gray-200">
+        <h3 className="text-lg font-semibold mb-4">Selección de Franjas Horarias</h3>
+        <p className="text-sm text-gray-600 mb-3">
+          Seleccione las franjas horarias en las que desea que aparezca este anuncio. Puede seleccionar múltiples franjas.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Object.keys(TIME_SLOTS).map(slotKey => {
+            const slot = TIME_SLOTS[slotKey];
+            const isSelected = selectedTimeSlots[slotKey];
+            
+            // Define colors directly instead of using string interpolation
+            let bgColor = isSelected ? 
+              (slot.color === 'blue' ? 'bg-blue-50' : 
+               slot.color === 'green' ? 'bg-green-50' : 'bg-purple-50') : 
+              'bg-white';
+              
+            let borderColor = isSelected ? 
+              (slot.color === 'blue' ? 'border-blue-500' : 
+               slot.color === 'green' ? 'border-green-500' : 'border-purple-500') : 
+              'border-gray-200 hover:border-gray-300';
+              
+            let dotColor = isSelected ? 
+              (slot.color === 'blue' ? 'bg-blue-500' : 
+               slot.color === 'green' ? 'bg-green-500' : 'bg-purple-500') : 
+              'bg-gray-200';
+            
+            return (
+              <div 
+                key={slotKey}
+                onClick={() => handleTimeSlotChange(slotKey)}
+                className={`cursor-pointer p-4 rounded-md border-2 transition-colors ${bgColor} ${borderColor}`}
+              >
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full mr-2 ${dotColor}`} />
+                  <h4 className="font-medium">{slot.name}</h4>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{slot.startHour}:00 - {slot.endHour}:00</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       
       <div className="flex justify-end space-x-2 mt-6">
         <button
@@ -300,4 +301,3 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
     </form>
   );
 }
-
