@@ -15,7 +15,7 @@ import {
   Palette,
 } from "lucide-react";
 import { Calculator, Car } from "lucide-react";
-import { getOnlineDevicesCount, UPDATE_INTERVAL_SECONDS } from "@/lib/deviceservice";
+import {deviceService} from "@/services/deviceService";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -84,7 +84,7 @@ export default function AdminLayout({ children }) {
 useEffect(() => {
   const fetchOnlineDevicesCount = async () => {
     try {
-      const count = await getOnlineDevicesCount();
+      const count = await deviceService.getOnlineDevicesCount();
       setOnlineDevicesCount(count);
     } catch (err) {
       console.error("Error al obtener dispositivos online:", err);
@@ -95,7 +95,7 @@ useEffect(() => {
   fetchOnlineDevicesCount();
 
   // Actualizar cada UPDATE_INTERVAL_SECONDS segundos
-  const interval = setInterval(fetchOnlineDevicesCount, UPDATE_INTERVAL_SECONDS * 1000);
+  const interval = setInterval(fetchOnlineDevicesCount, deviceService.UPDATE_INTERVAL_SECONDS * 1000);
 
   // Configurar suscripción realtime para actualizaciones instantáneas
   const channel = supabase
