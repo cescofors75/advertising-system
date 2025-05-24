@@ -541,7 +541,7 @@ export default function DeviceMonitoringDashboard() {
           </div>
         </div>
         
-        {/* Panel de diagnóstico (temporal) */}
+        {/* Panel de diagnóstico (temporal) 
         <div className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-xs">
           <h4 className="text-sm font-semibold text-slate-300 mb-2">🔍 Diagnóstico</h4>
           <div className="grid grid-cols-2 gap-4 text-slate-400">
@@ -565,7 +565,7 @@ export default function DeviceMonitoringDashboard() {
               <li>• Las actualizaciones ocurren cada 10 segundos</li>
             </ul>
           </div>
-        </div>
+        </div>*/}
         
         {/* Error global */}
         {error && (
