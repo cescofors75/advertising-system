@@ -6,6 +6,9 @@ import supabase from '@/lib/supabaseClient';
 import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw, 
   Search, Server, AlertCircle, Smartphone, Laptop, Battery, Zap, Activity, Eye } from 'lucide-react';
 
+// Constants
+const OFFLINE_THRESHOLD_MINUTES = 5;
+const UPDATE_INTERVAL_SECONDS = 10;
 
 export default function DeviceMonitoringDashboard() {
   const [devices, setDevices] = useState([]);
@@ -32,9 +35,7 @@ export default function DeviceMonitoringDashboard() {
   const pollTimerRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const channelsRef = useRef({ devices: null, adViews: null });
-  // Constantes compartidas
- const OFFLINE_THRESHOLD_MINUTES = 5
- const UPDATE_INTERVAL_SECONDS = 10;
+  
 
 // Función para actualizar dispositivos offline
  async function updateOfflineDevices() {
