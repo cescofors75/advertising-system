@@ -139,7 +139,7 @@ export default function AdminLayout({ children }) {
                     <Monitor className="w-4 h-4 mr-2" />
                     Display
                   </Link>
-                  <Link
+                  {/*<Link
                     href="/admin/usuarios"
                     className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       pathname === "/admin/usuarios"
@@ -149,7 +149,7 @@ export default function AdminLayout({ children }) {
                   >
                     <Users className="w-4 h-4 mr-2" />
                     Usuarios
-                  </Link>
+                  </Link>*/}
                  
                   <Link
               href="/admin/studio"
