@@ -6,17 +6,17 @@ import { Car, Euro, TrendingUp, AlertCircle, Target, Monitor, Server, Code } fro
 
 export default function TaxiAdsBusinessModel() {
   // Estados para todos los parámetros editables
-  const [numTaxis, setNumTaxis] = useState(50);
+  const [numTaxis, setNumTaxis] = useState(30);
   const [costePorTaxi, setCostePorTaxi] = useState(200);
   const [maxAnunciosMes, setMaxAnunciosMes] = useState(108);
-  const [precioAnuncio, setPrecioAnuncio] = useState(175);
-  const [anunciosVendidos, setAnunciosVendidos] = useState(80);
+  const [precioAnuncio, setPrecioAnuncio] = useState(200);
+  const [anunciosVendidos, setAnunciosVendidos] = useState(32);
   const [objetivoMin, setObjetivoMin] = useState(15000);
   const [objetivoMax, setObjetivoMax] = useState(20000);
   
   // Nuevos costes
-  const [costeDesarrollo, setCosteDesarrollo] = useState(12000);
-  const [costeServidor, setCosteServidor] = useState(200);
+  const [costeDesarrollo, setCosteDesarrollo] = useState(3000);
+  const [costeServidor, setCosteServidor] = useState(150);
   const [costePantalla, setCostePantalla] = useState(250);
   const [proyeccionAnios, setProyeccionAnios] = useState(3);
 
