@@ -15,7 +15,7 @@ import {
   Palette,
 } from "lucide-react";
 import { Calculator, Car } from "lucide-react";
-import {deviceService} from "@/services/deviceService";
+
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();

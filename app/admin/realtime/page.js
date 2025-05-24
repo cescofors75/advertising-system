@@ -2,14 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import supabase from '@/lib/supabaseClient';
-import { 
-  getAllDevices, 
-  calculateDeviceStats, 
-  UPDATE_INTERVAL_SECONDS,
-  OFFLINE_THRESHOLD_MINUTES 
-} from '@/lib/deviceservice';
+
 import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw, 
   Search, Server, AlertCircle, Smartphone, Laptop, Battery, Zap, Activity, Eye } from 'lucide-react';
+
 
 export default function DeviceMonitoringDashboard() {
   const [devices, setDevices] = useState([]);
@@ -36,7 +32,103 @@ export default function DeviceMonitoringDashboard() {
   const pollTimerRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const channelsRef = useRef({ devices: null, adViews: null });
+  // Constantes compartidas
+ const OFFLINE_THRESHOLD_MINUTES = 5
+ const UPDATE_INTERVAL_SECONDS = 10;
+
+// Función para actualizar dispositivos offline
+ async function updateOfflineDevices() {
+  const thresholdTime = new Date(Date.now() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000).toISOString();
   
+  try {
+    const { error } = await supabase
+      .from('connected_devices')
+      .update({ status: 'offline' })
+      .eq('status', 'online')
+      .lt('last_seen', thresholdTime);
+      
+    if (error) {
+      console.error('Error updating offline devices:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Error in updateOfflineDevices:', err);
+    return false;
+  }
+}
+
+// Función para obtener el conteo de dispositivos online
+ async function getOnlineDevicesCount() {
+  try {
+    // Primero actualizar dispositivos offline
+    await updateOfflineDevices();
+    
+    // Luego contar dispositivos online
+    const { count, error } = await supabase
+      .from('connected_devices')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'online');
+      
+    if (error) {
+      console.error('Error counting online devices:', error);
+      return 0;
+    }
+    
+    return count || 0;
+  } catch (err) {
+    console.error('Error in getOnlineDevicesCount:', err);
+    return 0;
+  }
+}
+
+// Función para obtener todos los dispositivos
+ async function getAllDevices() {
+  try {
+    // Primero actualizar dispositivos offline
+    await updateOfflineDevices();
+    
+    // Obtener todos los dispositivos
+    const { data, error } = await supabase
+      .from('connected_devices')
+      .select('*')
+      .order('last_seen', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching devices:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Error in getAllDevices:', err);
+    return [];
+  }
+}
+
+// Función para obtener estadísticas
+ function calculateDeviceStats(devices) {
+  const onlineDevices = devices.filter(d => d.status === 'online').length;
+  const uniqueLocations = new Set(devices.filter(d => d.location).map(d => d.location)).size;
+  
+  return {
+    totalDevices: devices.length,
+    onlineDevices,
+    uniqueLocations
+  };
+}
+
+// Función para verificar si un dispositivo está realmente online
+function isDeviceOnline(lastSeenDate) {
+  if (!lastSeenDate) return false;
+  
+  const lastSeen = new Date(lastSeenDate);
+  const now = new Date();
+  const diffMinutes = (now - lastSeen) / (1000 * 60);
+  
+  return diffMinutes < OFFLINE_THRESHOLD_MINUTES;
+}
   // Función para cargar datos desde Supabase
   const loadData = useCallback(async (showLoading = true) => {
     if (showLoading) {
@@ -367,6 +459,106 @@ export default function DeviceMonitoringDashboard() {
       default: return 'bg-slate-500/20 text-slate-400 border border-slate-500/30';
     }
   };
+
+
+
+  
+  // Constantes compartidas
+
+  
+  // Función para actualizar dispositivos offline
+  async function updateOfflineDevices() {
+    const thresholdTime = new Date(Date.now() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000).toISOString();
+    
+    try {
+      const { error } = await supabase
+        .from('connected_devices')
+        .update({ status: 'offline' })
+        .eq('status', 'online')
+        .lt('last_seen', thresholdTime);
+        
+      if (error) {
+        console.error('Error updating offline devices:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Error in updateOfflineDevices:', err);
+      return false;
+    }
+  }
+  
+  // Función para obtener el conteo de dispositivos online
+  async function getOnlineDevicesCount() {
+    try {
+      // Primero actualizar dispositivos offline
+      await updateOfflineDevices();
+      
+      // Luego contar dispositivos online
+      const { count, error } = await supabase
+        .from('connected_devices')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'online');
+        
+      if (error) {
+        console.error('Error counting online devices:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    } catch (err) {
+      console.error('Error in getOnlineDevicesCount:', err);
+      return 0;
+    }
+  }
+  
+  // Función para obtener todos los dispositivos
+  async function getAllDevices() {
+    try {
+      // Primero actualizar dispositivos offline
+      await updateOfflineDevices();
+      
+      // Obtener todos los dispositivos
+      const { data, error } = await supabase
+        .from('connected_devices')
+        .select('*')
+        .order('last_seen', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching devices:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (err) {
+      console.error('Error in getAllDevices:', err);
+      return [];
+    }
+  }
+  
+  // Función para obtener estadísticas
+  function calculateDeviceStats(devices) {
+    const onlineDevices = devices.filter(d => d.status === 'online').length;
+    const uniqueLocations = new Set(devices.filter(d => d.location).map(d => d.location)).size;
+    
+    return {
+      totalDevices: devices.length,
+      onlineDevices,
+      uniqueLocations
+    };
+  }
+  
+  // Función para verificar si un dispositivo está realmente online
+  function isDeviceOnline(lastSeenDate) {
+    if (!lastSeenDate) return false;
+    
+    const lastSeen = new Date(lastSeenDate);
+    const now = new Date();
+    const diffMinutes = (now - lastSeen) / (1000 * 60);
+    
+    return diffMinutes < OFFLINE_THRESHOLD_MINUTES;
+  }
   
   // Obtener estado de conexión realtime
   const getRealtimeStatusDisplay = () => {
