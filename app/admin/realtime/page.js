@@ -2,6 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import supabase from '@/lib/supabaseClient';
+import { 
+  getAllDevices, 
+  calculateDeviceStats, 
+  UPDATE_INTERVAL_SECONDS,
+  OFFLINE_THRESHOLD_MINUTES 
+} from '@/lib/deviceservice';
 import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw, 
   Search, Server, AlertCircle, Smartphone, Laptop, Battery, Zap, Activity, Eye } from 'lucide-react';
 
@@ -23,7 +29,7 @@ export default function DeviceMonitoringDashboard() {
   });
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [reconnectCount, setReconnectCount] = useState(0);
-  const [nextPollTime, setNextPollTime] = useState(10);
+  const [nextPollTime, setNextPollTime] = useState(UPDATE_INTERVAL_SECONDS);
   
   // Referencias para intervalos y canales
   const pollIntervalRef = useRef(null);
@@ -40,41 +46,22 @@ export default function DeviceMonitoringDashboard() {
     try {
       console.log('🔄 Fetching latest device data...');
       
-      // Primero, actualizar dispositivos offline (más de 5 minutos sin heartbeat)
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Obtener todos los dispositivos usando el servicio compartido
+      const devicesData = await getAllDevices();
       
-      const { error: updateError } = await supabase
-        .from('connected_devices')
-        .update({ status: 'offline' })
-        .eq('status', 'online')
-        .lt('last_seen', fiveMinutesAgo);
-        
-      if (updateError) {
-        console.error('Error updating offline devices:', updateError);
-      }
+      console.log(`✅ Loaded ${devicesData.length} devices`);
+      console.log('Device details:', devicesData.map(d => ({
+        name: d.name,
+        status: d.status,
+        last_seen: d.last_seen,
+        ip: d.ip
+      })));
       
-      // Obtener dispositivos
-      const { data: devicesData, error: devicesError } = await supabase
-        .from('connected_devices')
-        .select('*')
-        .order('last_seen', { ascending: false });
-
-      if (devicesError) {
-        console.error('Error loading devices:', devicesError);
-        throw devicesError;
-      }
+      setDevices(devicesData);
       
-      if (devicesData) {
-        console.log(`✅ Loaded ${devicesData.length} devices`);
-        console.log('Device details:', devicesData.map(d => ({
-          name: d.name,
-          status: d.status,
-          last_seen: d.last_seen,
-          ip: d.ip
-        })));
-        setDevices(devicesData);
-        updateStats(devicesData);
-      }
+      // Calcular estadísticas usando el servicio compartido
+      const stats = calculateDeviceStats(devicesData);
+      setStats(prev => ({ ...prev, ...stats }));
       
       // Obtener conteo de visualizaciones
       const { count, error: adViewsError } = await supabase
@@ -101,19 +88,6 @@ export default function DeviceMonitoringDashboard() {
     }
   }, []);
   
-  // Actualizar estadísticas
-  const updateStats = useCallback((devicesList) => {
-    const onlineDevices = devicesList.filter(d => d.status === 'online').length;
-    const uniqueLocations = new Set(devicesList.filter(d => d.location).map(d => d.location)).size;
-    
-    setStats(prev => ({
-      ...prev,
-      totalDevices: devicesList.length,
-      onlineDevices,
-      uniqueLocations
-    }));
-  }, []);
-  
   // Configurar polling como método principal
   useEffect(() => {
     console.log('🚀 Initializing dashboard...');
@@ -124,7 +98,7 @@ export default function DeviceMonitoringDashboard() {
     // Configurar contador de tiempo para siguiente actualización
     const updateNextPollTime = () => {
       setNextPollTime(prev => {
-        if (prev <= 0) return 10;
+        if (prev <= 0) return UPDATE_INTERVAL_SECONDS;
         return prev - 1;
       });
     };
@@ -132,12 +106,12 @@ export default function DeviceMonitoringDashboard() {
     // Timer para mostrar cuenta regresiva
     pollTimerRef.current = setInterval(updateNextPollTime, 1000);
     
-    // Polling cada 10 segundos (temporalmente más frecuente para debugging)
+    // Polling cada UPDATE_INTERVAL_SECONDS segundos
     pollIntervalRef.current = setInterval(() => {
       console.log('⏰ Polling update...');
       loadData(false);
-      setNextPollTime(10);
-    }, 10000);
+      setNextPollTime(UPDATE_INTERVAL_SECONDS);
+    }, UPDATE_INTERVAL_SECONDS * 1000);
     
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -317,7 +291,7 @@ export default function DeviceMonitoringDashboard() {
     
     if (success) {
       setRealtimeNotification({ type: 'update', message: '✅ Datos actualizados' });
-      setNextPollTime(10);
+      setNextPollTime(UPDATE_INTERVAL_SECONDS);
     } else {
       setRealtimeNotification({ type: 'delete', message: '❌ Error al actualizar' });
     }
@@ -419,7 +393,7 @@ export default function DeviceMonitoringDashboard() {
         return {
           color: 'slate',
           text: '⚪ Modo polling',
-          description: 'Actualización cada 30s'
+          description: `Actualización cada ${UPDATE_INTERVAL_SECONDS}s`
         };
       default:
         return {
@@ -541,7 +515,7 @@ export default function DeviceMonitoringDashboard() {
           </div>
         </div>
         
-        {/* Panel de diagnóstico (temporal) 
+        {/* Panel de diagnóstico (temporal) */}
         <div className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-xs">
           <h4 className="text-sm font-semibold text-slate-300 mb-2">🔍 Diagnóstico</h4>
           <div className="grid grid-cols-2 gap-4 text-slate-400">
@@ -561,11 +535,11 @@ export default function DeviceMonitoringDashboard() {
             <ul className="text-slate-500 ml-4 mt-1">
               <li>• Los dispositivos en /display estén enviando heartbeats</li>
               <li>• La tabla connected_devices tenga registros con status=&apos;online&apos;</li>
-              <li>• El campo last_seen sea reciente (menos de 5 minutos)</li>
-              <li>• Las actualizaciones ocurren cada 10 segundos</li>
+              <li>• El campo last_seen sea reciente (menos de {OFFLINE_THRESHOLD_MINUTES} minutos)</li>
+              <li>• Las actualizaciones ocurren cada {UPDATE_INTERVAL_SECONDS} segundos</li>
             </ul>
           </div>
-        </div>*/}
+        </div>
         
         {/* Error global */}
         {error && (
@@ -641,7 +615,7 @@ export default function DeviceMonitoringDashboard() {
                 <div key={device.id} className="bg-slate-800/50 backdrop-blur rounded-xl overflow-hidden border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
                   <div className="p-6 relative">
                     {/* Indicador de estado */}
-                    <div className="absolute top-14 right-4">
+                    <div className="absolute top-4 right-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(device.status)}`}>
                         {device.status === 'online' ? (
                           <>

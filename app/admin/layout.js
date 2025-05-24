@@ -15,6 +15,7 @@ import {
   Palette,
 } from "lucide-react";
 import { Calculator, Car } from "lucide-react";
+import { getOnlineDevicesCount, UPDATE_INTERVAL_SECONDS } from "@/lib/deviceservice";
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -79,55 +80,40 @@ export default function AdminLayout({ children }) {
   }, []);
 
   // Obtener conteo de dispositivos online
-  useEffect(() => {
-    const fetchOnlineDevicesCount = async () => {
-      try {
-        // Primero actualizar dispositivos que deberían estar offline
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-        
-        await supabase
-          .from('connected_devices')
-          .update({ status: 'offline' })
-          .eq('status', 'online')
-          .lt('last_seen', fiveMinutesAgo);
-        
-        // Luego contar dispositivos online
-        const { count, error } = await supabase
-          .from('connected_devices')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'online');
-          
-        if (!error && count !== null) {
-          setOnlineDevicesCount(count);
-        }
-      } catch (err) {
-        console.error("Error al obtener dispositivos online:", err);
+  // Obtener conteo de dispositivos online
+useEffect(() => {
+  const fetchOnlineDevicesCount = async () => {
+    try {
+      const count = await getOnlineDevicesCount();
+      setOnlineDevicesCount(count);
+    } catch (err) {
+      console.error("Error al obtener dispositivos online:", err);
+    }
+  };
+
+  // Fetch inicial
+  fetchOnlineDevicesCount();
+
+  // Actualizar cada UPDATE_INTERVAL_SECONDS segundos
+  const interval = setInterval(fetchOnlineDevicesCount, UPDATE_INTERVAL_SECONDS * 1000);
+
+  // Configurar suscripción realtime para actualizaciones instantáneas
+  const channel = supabase
+    .channel('devices-count-layout')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'connected_devices' }, 
+      () => {
+        // Cuando hay cambios, actualizar el conteo
+        fetchOnlineDevicesCount();
       }
-    };
+    )
+    .subscribe();
 
-    // Fetch inicial
-    fetchOnlineDevicesCount();
-
-    // Actualizar cada 30 segundos
-    const interval = setInterval(fetchOnlineDevicesCount, 30000);
-
-    // Configurar suscripción realtime para actualizaciones instantáneas
-    const channel = supabase
-      .channel('devices-count')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'connected_devices' }, 
-        () => {
-          // Cuando hay cambios, actualizar el conteo
-          fetchOnlineDevicesCount();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  return () => {
+    clearInterval(interval);
+    supabase.removeChannel(channel);
+  };
+}, []);
 
   const handleLogout = async () => {
     try {
