@@ -818,7 +818,7 @@ export default function DisplayPage() {
     const { current, forecast, location } = weatherData;
 
     return (
-      <div className="w-full h-full flex flex-col relative overflow-hidden">
+      <div className="w-full h-full flex flex-col relative overflow-auto">
         {/* Animated Weather Background */}
         <div className="absolute inset-0">
           {/* Sky gradient based on weather */}
@@ -894,14 +894,14 @@ export default function DisplayPage() {
         {/* Weather Content */}
         <div className="relative z-10 flex flex-col h-full text-white">
           {/* Header */}
-          <div className="flex justify-between items-center p-6 bg-black/30 backdrop-blur-md">
+          <div className="flex justify-between items-center p-2 bg-black/30 backdrop-blur-md">
             <div>
-              <h1 className="text-4xl font-bold">{location}</h1>
-              <p className="text-xl opacity-90">El tiempo en la Costa Brava</p>
+              <h1 className="text-2xl font-bold">{location}</h1>
+              <p className="text-sm opacity-90">El tiempo en la Costa Brava</p>
             </div>
             <div className="text-right">
-              <p className="text-lg opacity-90">Actualizado</p>
-              <p className="text-xl font-medium">
+              <p className="text-sm opacity-90">Actualizado</p>
+              <p className="text-base font-medium">
                 {current.lastUpdated?.toLocaleTimeString("es-ES", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -911,70 +911,70 @@ export default function DisplayPage() {
           </div>
 
           {/* Main Weather Display */}
-          <div className="flex-grow flex">
+          <div className="flex-grow flex overflow-hidden py-1">
             {/* Current Weather - Left Side */}
-            <div className="flex-1 flex flex-col justify-center items-center p-8">
+            <div className="flex-1 flex flex-col justify-center items-center p-2">
               <div className="text-center">
-                <div className="text-8xl mb-4 animate-pulse">
+                <div className="text-5xl mb-1 animate-pulse">
                   {current.icon}
                 </div>
-                <div className="text-9xl font-bold mb-4 text-shadow-lg">
+                <div className="text-6xl font-bold mb-1 text-shadow-lg">
                   {current.temp}°
                 </div>
-                <div className="text-3xl font-medium mb-6 capitalize">
+                <div className="text-xl font-medium mb-2 capitalize">
                   {current.description}
                 </div>
-                <div className="text-2xl opacity-90">
+                <div className="text-lg opacity-90">
                   Sensación térmica: {current.feels_like}°
                 </div>
               </div>
             </div>
 
             {/* Weather Details - Right Side */}
-            <div className="flex-1 p-8">
-              <h2 className="text-3xl font-bold mb-6">Condiciones Actuales</h2>
-
-              <div className="grid grid-cols-2 gap-6 text-lg">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="flex-1 p-2">
+              <h2 className="text-xl font-bold mb-2">Condiciones Actuales</h2>
+              
+              <div className="grid grid-cols-2 gap-2 text-base">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">💧</span>
                     <div>
                       <p className="opacity-90">Humedad</p>
-                      <p className="text-2xl font-bold">{current.humidity}%</p>
+                      <p className="text-xl font-bold">{current.humidity}%</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">💨</span>
                     <div>
                       <p className="opacity-90">Viento</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-xl font-bold">
                         {current.wind_speed} km/h
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🔍</span>
                     <div>
                       <p className="opacity-90">Visibilidad</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-xl font-bold">
                         {current.visibility} km
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">📊</span>
                     <div>
                       <p className="opacity-90">Presión</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-xl font-bold">
                         {current.pressure} mb
                       </p>
                     </div>
@@ -983,7 +983,7 @@ export default function DisplayPage() {
               </div>
 
               {/* Sunrise/Sunset */}
-              <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+              <div className="mt-2 bg-white/10 backdrop-blur-sm rounded-2xl p-2">
                 <div className="flex justify-between">
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">🌅</span>
@@ -1015,17 +1015,17 @@ export default function DisplayPage() {
           </div>
 
           {/* 7-Day Forecast */}
-          <div className="bg-black/30 backdrop-blur-md p-6">
-            <h2 className="text-3xl font-bold mb-6 text-center">
+          <div className="bg-black/30 backdrop-blur-md py-1 px-2">
+            <h2 className="text-xl font-bold mb-1 text-center">
               Previsión de la Semana
             </h2>
-            <div className="flex justify-between space-x-4">
+            <div className="flex justify-between space-x-1 overflow-x-auto pb-1 hide-scrollbar">
               {forecast.slice(0, 7).map((day, index) => (
                 <div
                   key={index}
-                  className="flex-1 text-center bg-white/10 backdrop-blur-sm rounded-2xl p-4"
+                  className="flex-1 min-w-[80px] text-center bg-white/10 backdrop-blur-sm rounded-2xl p-1"
                 >
-                  <p className="text-lg font-medium mb-2">
+                  <p className="text-xs font-medium mb-0.5">
                     {index === 0
                       ? "Hoy"
                       : index === 1
@@ -1034,14 +1034,14 @@ export default function DisplayPage() {
                           weekday: "short",
                         })}
                   </p>
-                  <div className="text-4xl mb-3 animate-pulse">{day.icon}</div>
-                  <div className="text-lg font-bold">
+                  <div className="text-2xl mb-0.5 animate-pulse">{day.icon}</div>
+                  <div className="text-sm font-bold">
                     {day.temp_max}° / {day.temp_min}°
                   </div>
-                  <p className="text-sm opacity-90 mt-2 capitalize">
+                  <p className="text-xs opacity-90 mt-0.5 capitalize truncate">
                     {day.description}
                   </p>
-                  <div className="flex justify-center space-x-3 mt-3 text-xs opacity-80">
+                  <div className="flex justify-center space-x-1 mt-0.5 text-xs opacity-80">
                     <span>💧{day.humidity}%</span>
                     <span>💨{day.wind_speed}km/h</span>
                   </div>
@@ -1063,6 +1063,19 @@ export default function DisplayPage() {
           }
           .text-shadow-lg {
             text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          }
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translate(-50%, 20px);
+            }
+            to {
+              opacity: 1;
+              transform: translate(-50%, 0);
+            }
+          }
+          .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
           }
         `}</style>
       </div>
@@ -1287,7 +1300,7 @@ export default function DisplayPage() {
   const currentAdIndex = filteredAds[currentAdIndexIndex];
 
   return (
-    <div className="flex flex-col min-h-screen bg-black relative overflow-hidden">
+    <div className="flex flex-col h-screen bg-black relative overflow-hidden">
       {/* Debug Panel - Temporal */}
       {/* <div className="fixed top-20 left-4 bg-black/80 text-white p-4 rounded-lg z-50 text-sm">
         <h3 className="font-bold mb-2">🔍 Debug Info</h3>
@@ -1426,7 +1439,7 @@ export default function DisplayPage() {
 
       {/* Premium Header */}
       <header
-        className="relative z-20 py-4 px-6 backdrop-blur-md"
+        className="relative z-20 py-2 px-6 backdrop-blur-md"
         style={{
           background:
             "linear-gradient(135deg, rgba(255, 128, 0, 0.95) 0%, rgba(255, 107, 0, 0.95) 50%, rgba(229, 90, 0, 0.95) 100%)",
@@ -1515,7 +1528,7 @@ export default function DisplayPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-grow relative flex flex-col items-center justify-center px-6 py-8">
+      <div className="flex-grow relative flex flex-col items-center justify-center px-6 py-4">
         {showWeather ? (
           <div
             className={`w-full h-full transition-all duration-800 ease-in-out transform ${
@@ -1540,7 +1553,7 @@ export default function DisplayPage() {
               }`}
             >
               {/* Media Container with advanced styling - Title removed to maximize media size */}
-              <div className="relative w-full max-h-[85vh] mb-4 rounded-3xl overflow-hidden shadow-2xl">
+              <div className="relative w-full mb-2 rounded-3xl overflow-hidden shadow-2xl" style={{ maxHeight: "calc(100vh - 150px)" }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-10"></div>
 
                 {currentAdIndex.media_url ? (
@@ -1552,12 +1565,12 @@ export default function DisplayPage() {
                         autoPlay
                         muted
                         loop
-                        style={{ maxHeight: "85vh" }}
+                        style={{ maxHeight: "calc(100vh - 150px)" }}
                       />
                       {/* Banner-style QR Code for video at the top */}
                       {currentAdIndex.website_url && currentAdIndex.show_qr_code && (
-                        <div className="absolute top-0 left-0 right-0 z-30">
-                          <div className="bg-gradient-to-r from-orange-600/90 to-orange-500/90 backdrop-blur-md p-3 flex items-center justify-between shadow-xl">
+                        <div className="absolute top-0 left-0 right-0 w-full z-30">
+                          <div className="bg-black/50 backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full">
                             <div className="flex-grow flex items-center">
                               <div className="bg-white p-2 rounded-xl shadow-lg mr-4">
                                 <img
@@ -1573,7 +1586,7 @@ export default function DisplayPage() {
                                 <p className="text-sm font-medium">Escanea el código QR o visita nuestra web</p>
                               </div>
                             </div>
-                            <div className="ml-4 px-4 py-2 bg-white/20 rounded-full border border-white/40 text-white font-bold text-sm animate-pulse">
+                            <div className="ml-4 px-4 py-2 bg-white/30 rounded-full border border-white/50 text-white font-bold text-sm animate-pulse">
                               Oferta Limitada
                             </div>
                           </div>
@@ -1581,31 +1594,17 @@ export default function DisplayPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="relative">
-                      <img
-                        className="w-full h-full object-contain"
-                        src={currentAdIndex.media_url}
-                        alt={currentAdIndex.title}
-                        style={{ maxHeight: "85vh" }}
-                      />
+                    <div className="relative w-full" style={{ maxWidth: "100%", maxHeight: "calc(100vh - 150px)" }}>
+                      {/* 16:9 aspect ratio container (9/16 = 0.5625 or 56.25%) */}
+                      <div className="relative w-full pb-[56.25%] overflow-hidden bg-black">
+                        <img
+                          className="absolute inset-0 w-full h-full object-contain"
+                          src={currentAdIndex.media_url}
+                          alt={currentAdIndex.title}
+                        />
+                      </div>
                       {/* Premium QR Code */}
-                      {currentAdIndex.website_url &&
-                        currentAdIndex.show_qr_code && (
-                          <div className="absolute bottom-6 right-6 z-20">
-                            <div className="bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-2xl border border-white/20">
-                              <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                                  currentAdIndex.website_url
-                                )}`}
-                                alt="QR Code"
-                                className="w-32 h-32 rounded-xl"
-                              />
-                              <p className="text-center text-xs font-medium text-gray-700 mt-2">
-                                Escanea para más info
-                              </p>
-                            </div>
-                          </div>
-                        )}
+                      {/* Empty div to maintain layout */}
                     </div>
                   )
                 ) : (
@@ -1636,8 +1635,8 @@ export default function DisplayPage() {
 
               {/* Description with premium styling */}
               {currentAdIndex.description && (
-                <div className="text-center">
-                  <p className="text-2xl md:text-3xl lg:text-4xl text-white leading-relaxed max-w-5xl mx-auto font-light">
+                <div className="text-center mt-1">
+                  <p className="text-xl md:text-2xl lg:text-3xl text-white leading-snug max-w-5xl mx-auto font-light">
                     <span className="bg-gradient-to-r from-white/90 to-orange-200/90 bg-clip-text text-transparent">
                       {currentAdIndex.description}
                     </span>
@@ -1650,7 +1649,7 @@ export default function DisplayPage() {
 
         {/* Premium Progress Indicators */}
         {!showWeather && filteredAds.length > 1 && (
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center items-center space-x-4">
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-4">
             <div className="flex space-x-3">
               {filteredAds.map((_, index) => (
                 <div key={index} className="relative">
@@ -1671,8 +1670,36 @@ export default function DisplayPage() {
         )}
       </div>
 
+      {/* Toast-style QR Code */}
+      {currentAdIndex && currentAdIndex.website_url && currentAdIndex.show_qr_code && currentAdIndex.media_type === "image" && (
+        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 animate-fade-in-up">
+          <div className="flex items-center space-x-4 bg-black/40 backdrop-blur-md rounded-full py-2 px-4 shadow-2xl border border-white/10">
+            <div className="flex items-center">
+              <div className="bg-white/95 p-2 rounded-xl mr-3">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    currentAdIndex.website_url
+                  )}`}
+                  alt="QR Code"
+                  className="w-14 h-14 rounded-lg"
+                />
+              </div>
+              <div className="text-white">
+                <p className="font-semibold text-sm">¿Quieres más información?</p>
+                <p className="text-xs opacity-80">Escanea el código QR con tu móvil</p>
+              </div>
+            </div>
+            <div className="bg-white/20 rounded-full h-8 w-8 flex items-center justify-center animate-pulse">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Premium Footer */}
-      <footer className="relative z-20 py-4 px-6 bg-black/80 backdrop-blur-md">
+      <footer className="relative z-20 py-2 px-6 bg-black/80 backdrop-blur-md">
         <div className="flex justify-between items-center text-white/90">
           <div className="flex items-center space-x-4">
             <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full"></div>
