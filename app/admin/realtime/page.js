@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import supabase from '@/lib/supabaseClient';
 import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw, 
   Search, Server, AlertCircle, Smartphone, Laptop, Battery, Zap, Activity, Eye } from 'lucide-react';
@@ -22,14 +21,16 @@ export default function DeviceMonitoringDashboard() {
     uniqueLocations: 0,
     totalAdViews: 0
   });
+  const channelRef = useRef(null);
+  const adViewsChannelRef = useRef(null);
+  const [lastUpdate, setLastUpdate] = useState(new Date()); // Add this to force re-renders
   
   // Load devices data with Supabase real-time subscription
   useEffect(() => {
-    let channel;
-
     async function setupRealtimeSubscription() {
       try {
         setLoading(true);
+        console.log('🔄 Setting up realtime subscription...');
         
         // Fetch current devices from Supabase
         const { data, error } = await supabase
@@ -40,6 +41,7 @@ export default function DeviceMonitoringDashboard() {
         if (error) throw error;
         
         if (data) {
+          console.log(`✅ Loaded ${data.length} devices from database`);
           setDevices(data);
           updateStats(data);
         }
@@ -50,12 +52,19 @@ export default function DeviceMonitoringDashboard() {
           .select('id', { count: 'exact' });
           
         if (!adViewsError && adViewsData) {
+          console.log(`✅ Loaded ${adViewsData.length} ad views`);
           setStats(prev => ({ ...prev, totalAdViews: adViewsData.length }));
         }
         
         // Setup realtime subscription for connected_devices table
-        channel = supabase
-          .channel('connected_devices_changes')
+        if (channelRef.current) {
+          console.log('⚠️ Removing existing channel subscription');
+          supabase.removeChannel(channelRef.current);
+        }
+        
+        console.log('🔌 Creating new channel subscription for connected_devices');
+        channelRef.current = supabase
+          .channel('devices-channel-' + Date.now())
           .on(
             'postgres_changes',
             {
@@ -64,6 +73,7 @@ export default function DeviceMonitoringDashboard() {
               table: 'connected_devices'
             },
             (payload) => {
+              console.log('📡 Realtime event received:', payload.eventType, payload);
               setRealtimeStatus('connected');
               
               // Handle different types of changes
@@ -75,22 +85,48 @@ export default function DeviceMonitoringDashboard() {
                   updateStats(updated);
                   return updated;
                 });
+                
+                // Force a UI update
+                setLastUpdate(new Date());
               } 
               else if (payload.eventType === 'UPDATE') {
+                // Always show notification for updates too
+                setRealtimeNotification({ type: 'update', message: 'Dispositivo actualizado' });
+                
                 setDevices(prev => {
-                  const updated = prev.map(device => 
-                    device.id === payload.new.id ? payload.new : device
-                  );
+                  // Check if the device exists before updating
+                  const deviceExists = prev.some(device => device.id === payload.new.id);
+                  let updated;
+                  
+                  if (deviceExists) {
+                    updated = prev.map(device => 
+                      device.id === payload.new.id ? payload.new : device
+                    );
+                  } else {
+                    // If device doesn't exist (which shouldn't happen, but just in case),
+                    // add it to the list
+                    updated = [payload.new, ...prev];
+                  }
+                  
+                  console.log('📊 Updated devices state with new data');
                   updateStats(updated);
                   return updated;
                 });
+                
+                // Force a UI update
+                setLastUpdate(new Date());
               } 
               else if (payload.eventType === 'DELETE') {
+                setRealtimeNotification({ type: 'delete', message: 'Dispositivo eliminado' });
+                
                 setDevices(prev => {
                   const updated = prev.filter(device => device.id !== payload.old.id);
                   updateStats(updated);
                   return updated;
                 });
+                
+                // Force a UI update
+                setLastUpdate(new Date());
               }
               
               // Clear notification after 3 seconds
@@ -98,16 +134,23 @@ export default function DeviceMonitoringDashboard() {
             }
           )
           .subscribe((status) => {
+            console.log('📡 Channel subscription status:', status);
             if (status === 'SUBSCRIBED') {
               setRealtimeStatus('connected');
+              console.log('✅ Successfully subscribed to realtime updates');
             } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+              console.error('❌ Channel error or closed:', status);
               setRealtimeStatus('error');
             }
           });
 
         // Also subscribe to ad_views to update stats
-        supabase
-          .channel('ad_views_changes')
+        if (adViewsChannelRef.current) {
+          supabase.removeChannel(adViewsChannelRef.current);
+        }
+        
+        adViewsChannelRef.current = supabase
+          .channel('ad-views-channel-' + Date.now())
           .on(
             'postgres_changes',
             {
@@ -116,7 +159,10 @@ export default function DeviceMonitoringDashboard() {
               table: 'ad_views'
             },
             (payload) => {
+              console.log('📡 New ad view received:', payload);
               setStats(prev => ({ ...prev, totalAdViews: prev.totalAdViews + 1 }));
+              // Force a UI update
+              setLastUpdate(new Date());
             }
           )
           .subscribe();
@@ -124,7 +170,7 @@ export default function DeviceMonitoringDashboard() {
         setLoading(false);
         
       } catch (err) {
-        console.error('Error setting up realtime subscription:', err);
+        console.error('❌ Error setting up realtime subscription:', err);
         setError('Error al conectar con el sistema en tiempo real: ' + err.message);
         setRealtimeStatus('error');
         setLoading(false);
@@ -133,11 +179,22 @@ export default function DeviceMonitoringDashboard() {
 
     setupRealtimeSubscription();
 
+    // Setup a reconnection interval every 5 minutes to keep the connection fresh
+    const reconnectInterval = setInterval(() => {
+      console.log('🔄 Refreshing realtime connection...');
+      setupRealtimeSubscription();
+    }, 5 * 60 * 1000); // 5 minutes
+
     // Cleanup subscription on unmount
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      console.log('🧹 Cleaning up subscriptions');
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
       }
+      if (adViewsChannelRef.current) {
+        supabase.removeChannel(adViewsChannelRef.current);
+      }
+      clearInterval(reconnectInterval);
     };
   }, []);
   
@@ -152,6 +209,51 @@ export default function DeviceMonitoringDashboard() {
       onlineDevices,
       uniqueLocations
     }));
+  };
+
+  // Manual refresh function
+  const handleManualRefresh = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Manual refresh triggered');
+      
+      // Fetch current devices from Supabase
+      const { data, error } = await supabase
+        .from('connected_devices')
+        .select('*')
+        .order('last_seen', { ascending: false });
+
+      if (error) throw error;
+      
+      if (data) {
+        console.log(`✅ Refreshed ${data.length} devices from database`);
+        setDevices(data);
+        updateStats(data);
+      }
+      
+      // Fetch ad views count
+      const { data: adViewsData, error: adViewsError } = await supabase
+        .from('ad_views')
+        .select('id', { count: 'exact' });
+        
+      if (!adViewsError && adViewsData) {
+        console.log(`✅ Refreshed ${adViewsData.length} ad views`);
+        setStats(prev => ({ ...prev, totalAdViews: adViewsData.length }));
+      }
+      
+      // Force a UI update
+      setLastUpdate(new Date());
+      
+      // Show success notification
+      setRealtimeNotification({ type: 'update', message: 'Datos actualizados manualmente' });
+      setTimeout(() => setRealtimeNotification(null), 3000);
+      
+    } catch (err) {
+      console.error('❌ Error refreshing data:', err);
+      setError('Error al actualizar los datos: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Filter and sort devices
@@ -255,13 +357,20 @@ export default function DeviceMonitoringDashboard() {
               <Car className="w-10 h-10 mr-3 text-orange-500" />
               Dispositivos Conectados
             </h1>
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 rounded-xl font-medium flex items-center transition-colors"
-            >
-              <RefreshCw className="w-5 h-5 mr-2" />
-              Actualizar
-            </button>
+            <div className="flex space-x-4">
+              <button 
+                onClick={handleManualRefresh}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-medium flex items-center transition-colors"
+                disabled={loading}
+              >
+                <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Actualizando...' : 'Actualizar'}
+              </button>
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Última actualización</p>
+                <p className="text-sm text-slate-300">{lastUpdate.toLocaleTimeString()}</p>
+              </div>
+            </div>
           </div>
           <p className="text-slate-300 text-lg">Monitoreo en tiempo real de los dispositivos conectados al sistema Publi-Taxi</p>
         </div>
@@ -384,7 +493,11 @@ export default function DeviceMonitoringDashboard() {
           </div>
           
           <div className="text-slate-400 text-sm">
-            Dispositivos sincronizados automáticamente
+            {realtimeStatus === 'connected' 
+              ? 'Dispositivos sincronizados automáticamente' 
+              : realtimeStatus === 'connecting' 
+                ? 'Estableciendo conexión...'
+                : 'Haga clic en "Actualizar" para intentar de nuevo'}
           </div>
         </div>
         
@@ -403,10 +516,10 @@ export default function DeviceMonitoringDashboard() {
               </div>
             ) : (
               filteredDevices.map(device => (
-                <div key={device.id} className="bg-slate-800/50 backdrop-blur rounded-xl overflow-hidden border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
+                <div key={`${device.id}-${lastUpdate.getTime()}`} className="bg-slate-800/50 backdrop-blur rounded-xl overflow-hidden border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
                   <div className="p-6 relative">
                     {/* Status indicator */}
-                    <div className="absolute top-16 right-4">
+                    <div className="absolute top-4 right-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(device.status)}`}>
                         {device.status === 'online' ? (
                           <>
@@ -476,6 +589,19 @@ export default function DeviceMonitoringDashboard() {
                       <div className="bg-slate-700/30 rounded-lg p-3 mb-3">
                         <p className="text-xs text-slate-400 mb-1">Anuncio actual</p>
                         <p className="text-sm text-white font-medium truncate">{device.current_ad}</p>
+                      </div>
+                    )}
+                    
+                    {/* Time slot info */}
+                    {device.current_time_slot && (
+                      <div className="bg-slate-700/30 rounded-lg p-3 mb-3">
+                        <p className="text-xs text-slate-400 mb-1">Franja horaria</p>
+                        <p className="text-sm text-white font-medium">
+                          {device.current_time_slot === 'morning' ? 'Mañana' : 
+                           device.current_time_slot === 'afternoon' ? 'Tarde' : 
+                           device.current_time_slot === 'night' ? 'Noche' : 
+                           device.current_time_slot}
+                        </p>
                       </div>
                     )}
                     
