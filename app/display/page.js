@@ -18,7 +18,7 @@ const TIME_SLOTS = {
 export default function DisplayPage() {
   const [allAds, setAllAds] = useState([]);
   const [filteredAds, setFilteredAds] = useState([]);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [currentAdIndexIndex, setcurrentAdIndexIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fadeState, setFadeState] = useState('in');
@@ -33,6 +33,231 @@ export default function DisplayPage() {
   const [showWeather, setShowWeather] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(true); // Start as loading
 
+// First, add this new state variable to your existing state declarations
+const [deviceId, setDeviceId] = useState('');
+
+// Add this useEffect hook to collect and send device data
+// Add this useEffect hook to collect and send device data
+useEffect(() => {
+  let deviceId = '';
+  
+  const collectAndSendDeviceData = async () => {
+    // Generate a unique device ID if none exists
+    let deviceIdentifier = localStorage.getItem('device_id');
+    if (!deviceIdentifier) {
+      deviceIdentifier = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('device_id', deviceIdentifier);
+    }
+    deviceId = deviceIdentifier;
+    
+    // Get current ad details from your existing state
+    const currentAd = currentAdIndexIndex >= 0 && filteredAds.length > 0 && filteredAds[currentAdIndexIndex]
+      ? filteredAds[currentAdIndexIndex]
+      : null;
+    
+    // Collect device information
+    const deviceInfo = {
+      id: deviceIdentifier,
+      name: deviceIdentifier, // You could customize this with a friendly name
+      ip: '', // This will be captured on the server side
+      last_seen: new Date().toISOString(),
+      os: getOperatingSystem(),
+      browser: getBrowserInfo(),
+      device_type: getDeviceType(),
+      location: '', // Could be filled in server-side or with user permission
+      status: 'online',
+      network: navigator.connection ? navigator.connection.effectiveType : 'unknown',
+      resolution: `${window.screen.width}x${window.screen.height}`,
+      user_agent: navigator.userAgent,
+      first_seen: localStorage.getItem('first_seen') || new Date().toISOString(),
+      battery: await getBatteryLevel(),
+      memory_usage: null, // Not available in most browsers
+      cpu_usage: null, // Not available in most browsers
+      current_ad: currentAd ? currentAd.title : null,
+      current_time_slot: currentTimeSlot
+    };
+    
+    // Save first seen date if it doesn't exist
+    if (!localStorage.getItem('first_seen')) {
+      localStorage.setItem('first_seen', deviceInfo.first_seen);
+    }
+    
+    // Send to Supabase
+    try {
+      // First try to update if the device already exists
+      const { error: upsertError } = await supabase
+        .from('connected_devices')
+        .upsert(deviceInfo, { onConflict: 'id' });
+        
+      if (upsertError) throw upsertError;
+      
+      console.log('✅ Device info updated successfully');
+      
+      // If there's a current ad, log the view
+      if (currentAd) {
+        const adViewKey = `ad_view_${currentAd.id}_${currentAdIndexIndex}`;
+        if (!localStorage.getItem(adViewKey)) {
+          // Log ad view to Supabase
+          const { error: adViewError } = await supabase
+            .from('ad_views')
+            .insert([
+              { 
+                device_id: deviceIdentifier,
+                ad_id: currentAd.id,
+                timestamp: new Date().toISOString(),
+                time_slot: currentTimeSlot
+              }
+            ]);
+            
+          if (adViewError) {
+            console.error('Error logging ad view:', adViewError);
+          } else {
+            // Mark this ad as viewed for this session to avoid duplicate logs
+            localStorage.setItem(adViewKey, 'viewed');
+            console.log('✅ Ad view logged successfully');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error updating device info:', error);
+    }
+  };
+  
+  // Helper functions to get device information
+  const getOperatingSystem = () => {
+    const userAgent = window.navigator.userAgent;
+    
+    if (userAgent.indexOf("Windows") !== -1) return "Windows";
+    if (userAgent.indexOf("Mac") !== -1) return "macOS";
+    if (userAgent.indexOf("Linux") !== -1) return "Linux";
+    if (userAgent.indexOf("Android") !== -1) return "Android";
+    if (userAgent.indexOf("iOS") !== -1 || userAgent.indexOf("iPhone") !== -1 || userAgent.indexOf("iPad") !== -1) return "iOS";
+    
+    return "Unknown OS";
+  };
+  
+  const getBrowserInfo = () => {
+    const userAgent = window.navigator.userAgent;
+    
+    if (userAgent.indexOf("Chrome") !== -1) return "Chrome";
+    if (userAgent.indexOf("Firefox") !== -1) return "Firefox";
+    if (userAgent.indexOf("Safari") !== -1) return "Safari";
+    if (userAgent.indexOf("Edge") !== -1) return "Edge";
+    if (userAgent.indexOf("MSIE") !== -1 || userAgent.indexOf("Trident/") !== -1) return "Internet Explorer";
+    
+    return "Unknown Browser";
+  };
+  
+  const getDeviceType = () => {
+    const userAgent = window.navigator.userAgent;
+    
+    if (/iPad|Tablet|PlayBook/i.test(userAgent)) return "tablet";
+    if (/Mobile|Android|iPhone|iPod/i.test(userAgent)) return "mobile";
+    
+    return "desktop";
+  };
+  
+  const getBatteryLevel = async () => {
+    if (navigator.getBattery) {
+      try {
+        const battery = await navigator.getBattery();
+        return Math.round(battery.level * 100);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+  
+  // Initial data collection
+  collectAndSendDeviceData();
+  
+  // Set up interval to update device info every minute
+  const intervalId = setInterval(collectAndSendDeviceData, 60000);
+  
+  // Set up visibility change detection to update status
+  const handleVisibilityChange = async () => {
+    // Get stored device ID
+    const storedDeviceId = localStorage.getItem('device_id');
+    if (!storedDeviceId) return;
+    
+    if (document.visibilityState === 'visible') {
+      // Page is visible again, update status to online
+      try {
+        const { error } = await supabase
+          .from('connected_devices')
+          .update({ status: 'online', last_seen: new Date().toISOString() })
+          .eq('id', storedDeviceId);
+          
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating device status:', error);
+      }
+    } else {
+      // Page is hidden, update status to offline
+      try {
+        const { error } = await supabase
+          .from('connected_devices')
+          .update({ status: 'offline', last_seen: new Date().toISOString() })
+          .eq('id', storedDeviceId);
+          
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating device status:', error);
+      }
+    }
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  // Cleanup on component unmount
+  return () => {
+    clearInterval(intervalId);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Get stored device ID
+    const storedDeviceId = localStorage.getItem('device_id');
+    if (!storedDeviceId) return;
+    
+    // Mark device as offline when leaving the page
+    supabase
+      .from('connected_devices')
+      .update({ status: 'offline', last_seen: new Date().toISOString() })
+      .eq('id', storedDeviceId)
+      .then(({ error }) => {
+        if (error) console.error('Error marking device as offline:', error);
+      });
+  };
+}, [currentAdIndexIndex, filteredAds, currentTimeSlot]);  // These are the variables used from your component
+
+// Also add a listener for ad changes to log which ads are being viewed
+ useEffect(() => {
+  if (deviceId && currentAdIndex) {
+    // Log ad view to Supabase
+    supabase
+      .from('ad_views')
+      .insert([
+        { 
+          device_id: deviceId,
+          ad_id: currentAdIndex.id,
+          timestamp: new Date().toISOString(),
+          time_slot: currentTimeSlot
+        }
+      ])
+      .then(({ error }) => {
+        if (error) console.error('Error logging ad view:', error);
+      });
+      
+    // Update current ad in device info
+    supabase
+      .from('connected_devices')
+      .update({ current_ad: currentAdIndex.title })
+      .eq('id', deviceId)
+      .then(({ error }) => {
+        if (error) console.error('Error updating current ad:', error);
+      });
+  }
+},  [currentAdIndexIndex, filteredAds, currentTimeSlot]); 
   // Load weather data immediately when component initializes
   useEffect(() => {
     const loadInitialWeatherData = async () => {
@@ -339,14 +564,14 @@ export default function DisplayPage() {
         const filtered = filterAdsByCurrentTimeSlot(allAds);
         setFilteredAds(filtered);
         
-        if (currentAdIndex >= filtered.length && filtered.length > 0) {
-          setCurrentAdIndex(0);
+        if (currentAdIndexIndex >= filtered.length && filtered.length > 0) {
+          setcurrentAdIndexIndex(0);
         }
       }
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, [allAds, filterAdsByCurrentTimeSlot, currentAdIndex]);
+  }, [allAds, filterAdsByCurrentTimeSlot, currentAdIndexIndex]);
 
   // Rotate advertisements with enhanced animations
   useEffect(() => {
@@ -356,8 +581,8 @@ export default function DisplayPage() {
       if (showWeather) {
         // Weather is showing, go back to first ad
         setShowWeather(false);
-        setCurrentAdIndex(0);
-      } else if (currentAdIndex >= filteredAds.length - 1) {
+        setcurrentAdIndexIndex(0);
+      } else if (currentAdIndexIndex >= filteredAds.length - 1) {
         // Last ad, show weather next
         setShowWeather(true);
       } else {
@@ -368,14 +593,14 @@ export default function DisplayPage() {
         setFadeState('out');
         
         setTimeout(() => {
-          setCurrentAdIndex(currentAdIndex + 1);
+          setcurrentAdIndexIndex(currentAdIndexIndex + 1);
           setFadeState('in');
         }, 800);
       }
     }, showWeather ? 10000 : 7000); // 10 seconds for weather, 7 for ads
 
     return () => clearInterval(interval);
-  }, [currentAdIndex, showWeather, filteredAds.length]); // Removed weatherData to fix dependency size issue
+  }, [currentAdIndexIndex, showWeather, filteredAds.length]); // Removed weatherData to fix dependency size issue
 
   const WeatherScreen = () => {
     console.log('🌤️ WeatherScreen component rendering...', { weatherData, isClient });
@@ -762,7 +987,7 @@ export default function DisplayPage() {
     );
   }
 
-  const currentAd = filteredAds[currentAdIndex];
+  const currentAdIndex = filteredAds[currentAdIndexIndex];
 
   return (
     <div className="flex flex-col min-h-screen bg-black relative overflow-hidden">
@@ -770,18 +995,18 @@ export default function DisplayPage() {
       {/* <div className="fixed top-20 left-4 bg-black/80 text-white p-4 rounded-lg z-50 text-sm">
         <h3 className="font-bold mb-2">🔍 Debug Info</h3>
         <p>📊 Total ads: {filteredAds.length}</p>
-        <p>📍 Current index: {currentAdIndex}</p>
+        <p>📍 Current index: {currentAdIndexIndex}</p>
         <p>🌤️ Show weather: {showWeather ? 'YES' : 'NO'}</p>
         <p>📋 Weather data: {weatherData ? 'LOADED ✅' : weatherLoading ? 'LOADING...' : 'NOT LOADED ❌'}</p>
         <p>🎯 Next action: {
           showWeather ? 'Hide weather → Ad 1' :
-          currentAdIndex >= filteredAds.length - 1 ? 'Show weather' :
-          `Show ad ${currentAdIndex + 2}`
+          currentAdIndexIndex >= filteredAds.length - 1 ? 'Show weather' :
+          `Show ad ${currentAdIndexIndex + 2}`
         }</p>
         <div className="mt-3 text-xs opacity-70">
           <p>Sequence should be:</p>
           {filteredAds.map((ad, i) => (
-            <span key={i} className={currentAdIndex === i && !showWeather ? 'text-green-400' : ''}>
+            <span key={i} className={currentAdIndexIndex === i && !showWeather ? 'text-green-400' : ''}>
               Ad{i+1} → 
             </span>
           ))}
@@ -921,7 +1146,7 @@ export default function DisplayPage() {
             
             <div className="text-center">
               <p className="text-sm font-medium opacity-90">Debug Info</p>
-              <p className="text-lg font-bold">{showWeather ? '🌤️ Tiempo' : `📺 Ad ${currentAdIndex + 1}/${filteredAds.length}`}</p>
+              <p className="text-lg font-bold">{showWeather ? '🌤️ Tiempo' : `📺 Ad ${currentAdIndexIndex + 1}/${filteredAds.length}`}</p>
             </div>*/}
             
             <div className="text-center">
@@ -936,7 +1161,7 @@ export default function DisplayPage() {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium opacity-90">Anuncios</p>
-              <p className="text-lg font-bold">{filteredAds.length > 0 ? `${currentAdIndex + 1}/${filteredAds.length}` : '0/0'}</p>
+              <p className="text-lg font-bold">{filteredAds.length > 0 ? `${currentAdIndexIndex + 1}/${filteredAds.length}` : '0/0'}</p>
             </div>
           </div>
         </div>
@@ -955,7 +1180,7 @@ export default function DisplayPage() {
             <WeatherScreen />
           </div>
         ) : (
-          currentAd && (
+          currentAdIndex && (
             <div 
               className={`w-full max-w-7xl transition-all duration-800 ease-in-out transform ${
                 fadeState === 'in' 
@@ -966,7 +1191,7 @@ export default function DisplayPage() {
             {/* Title with premium styling */}
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400 mb-4 leading-tight tracking-tight">
-                {currentAd.title}
+                {currentAdIndex.title}
               </h1>
               <div className="w-32 h-1 bg-gradient-to-r from-orange-400 to-orange-600 mx-auto rounded-full"></div>
             </div>
@@ -975,11 +1200,11 @@ export default function DisplayPage() {
             <div className="relative w-full max-h-[60vh] mb-8 rounded-3xl overflow-hidden shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-10"></div>
               
-              {currentAd.media_url ? (
-                currentAd.media_type === 'video' ? (
+              {currentAdIndex.media_url ? (
+                currentAdIndex.media_type === 'video' ? (
                   <video 
                     className="w-full h-full object-cover" 
-                    src={currentAd.media_url} 
+                    src={currentAdIndex.media_url} 
                     autoPlay 
                     muted 
                     loop
@@ -989,16 +1214,16 @@ export default function DisplayPage() {
                   <div className="relative">
                     <img 
                       className="w-full h-full object-cover" 
-                      src={currentAd.media_url} 
-                      alt={currentAd.title}
+                      src={currentAdIndex.media_url} 
+                      alt={currentAdIndex.title}
                       style={{ maxHeight: '60vh' }}
                     />
                     {/* Premium QR Code */}
-                    {currentAd.website_url && currentAd.show_qr_code && (
+                    {currentAdIndex.website_url && currentAdIndex.show_qr_code && (
                       <div className="absolute bottom-6 right-6 z-20">
                         <div className="bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-2xl border border-white/20">
                           <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentAd.website_url)}`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentAdIndex.website_url)}`}
                             alt="QR Code"
                             className="w-32 h-32 rounded-xl"
                           />
@@ -1023,11 +1248,11 @@ export default function DisplayPage() {
             </div>
             
             {/* Description with premium styling */}
-            {currentAd.description && (
+            {currentAdIndex.description && (
               <div className="text-center">
                 <p className="text-2xl md:text-3xl lg:text-4xl text-white leading-relaxed max-w-5xl mx-auto font-light">
                   <span className="bg-gradient-to-r from-white/90 to-orange-200/90 bg-clip-text text-transparent">
-                    {currentAd.description}
+                    {currentAdIndex.description}
                   </span>
                 </p>
               </div>
@@ -1044,12 +1269,12 @@ export default function DisplayPage() {
                 <div key={index} className="relative">
                   <div 
                     className={`h-3 w-12 rounded-full transition-all duration-500 ${
-                      index === currentAdIndex 
+                      index === currentAdIndexIndex 
                         ? 'bg-gradient-to-r from-orange-400 to-orange-600 shadow-lg shadow-orange-500/50' 
                         : 'bg-white/30 backdrop-blur-sm'
                     }`}
                   />
-                  {index === currentAdIndex && (
+                  {index === currentAdIndexIndex && (
                     <div className="absolute inset-0 h-3 w-12 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 animate-pulse"></div>
                   )}
                 </div>
