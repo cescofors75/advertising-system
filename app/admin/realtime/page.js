@@ -406,7 +406,7 @@ export default function DeviceMonitoringDashboard() {
                 <div key={device.id} className="bg-slate-800/50 backdrop-blur rounded-xl overflow-hidden border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
                   <div className="p-6 relative">
                     {/* Status indicator */}
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-16 right-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(device.status)}`}>
                         {device.status === 'online' ? (
                           <>

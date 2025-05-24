@@ -160,7 +160,7 @@ export default function AdminLayout({ children }) {
             </Link>
 
             <Link
-              href="/admin/cars"
+              href="/admin/realtime"
               className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
             >
               <Car className="w-4 h-4 mr-2" />
