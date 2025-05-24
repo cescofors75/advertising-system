@@ -1539,35 +1539,54 @@ export default function DisplayPage() {
                     }`
               }`}
             >
-              {/* Title with premium styling */}
-              <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400 mb-4 leading-tight tracking-tight">
-                  {currentAdIndex.title}
-                </h1>
-                <div className="w-32 h-1 bg-gradient-to-r from-orange-400 to-orange-600 mx-auto rounded-full"></div>
-              </div>
-
-              {/* Media Container with advanced styling */}
-              <div className="relative w-full max-h-[60vh] mb-8 rounded-3xl overflow-hidden shadow-2xl">
+              {/* Media Container with advanced styling - Title removed to maximize media size */}
+              <div className="relative w-full max-h-[85vh] mb-4 rounded-3xl overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-10"></div>
 
                 {currentAdIndex.media_url ? (
                   currentAdIndex.media_type === "video" ? (
-                    <video
-                      className="w-full h-full object-cover"
-                      src={currentAdIndex.media_url}
-                      autoPlay
-                      muted
-                      loop
-                      style={{ maxHeight: "60vh" }}
-                    />
+                    <div className="relative">
+                      <video
+                        className="w-full h-full object-contain"
+                        src={currentAdIndex.media_url}
+                        autoPlay
+                        muted
+                        loop
+                        style={{ maxHeight: "85vh" }}
+                      />
+                      {/* Banner-style QR Code for video at the top */}
+                      {currentAdIndex.website_url && currentAdIndex.show_qr_code && (
+                        <div className="absolute top-0 left-0 right-0 z-30">
+                          <div className="bg-gradient-to-r from-orange-600/90 to-orange-500/90 backdrop-blur-md p-3 flex items-center justify-between shadow-xl">
+                            <div className="flex-grow flex items-center">
+                              <div className="bg-white p-2 rounded-xl shadow-lg mr-4">
+                                <img
+                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                                    currentAdIndex.website_url
+                                  )}`}
+                                  alt="QR Code"
+                                  className="w-16 h-16 rounded-lg"
+                                />
+                              </div>
+                              <div className="text-white">
+                                <h3 className="text-xl font-bold animate-pulse">¡Compra Tickets Ahora!</h3>
+                                <p className="text-sm font-medium">Escanea el código QR o visita nuestra web</p>
+                              </div>
+                            </div>
+                            <div className="ml-4 px-4 py-2 bg-white/20 rounded-full border border-white/40 text-white font-bold text-sm animate-pulse">
+                              Oferta Limitada
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="relative">
                       <img
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         src={currentAdIndex.media_url}
                         alt={currentAdIndex.title}
-                        style={{ maxHeight: "60vh" }}
+                        style={{ maxHeight: "85vh" }}
                       />
                       {/* Premium QR Code */}
                       {currentAdIndex.website_url &&
