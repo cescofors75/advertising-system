@@ -2,12 +2,14 @@
 
 import { useState, useRef } from 'react';
 import supabase from '@/lib/supabaseClient';
+import { Upload, Image, Video, Trash2, AlertCircle, Check } from 'lucide-react';
 
 export default function MediaUpload({ initialUrl, initialType, onUpload }) {
   const [mediaUrl, setMediaUrl] = useState(initialUrl || null);
   const [mediaType, setMediaType] = useState(initialType || 'image');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   const handleFileChange = async (e) => {
@@ -38,8 +40,20 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
 
     setUploading(true);
     setError(null);
+    setUploadProgress(0);
 
     try {
+      // Simular progreso de carga
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
       // Crear un nombre de archivo único
       const timestamp = new Date().getTime();
       const fileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
@@ -58,6 +72,9 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
         .from('advertisements')
         .getPublicUrl(fileName);
       
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
       // Establecer la URL y el tipo de multimedia
       setMediaUrl(publicUrl);
       setMediaType(fileType);
@@ -66,9 +83,14 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
       if (onUpload) {
         onUpload(publicUrl, fileType);
       }
+      
+      setTimeout(() => {
+        setUploadProgress(0);
+      }, 1000);
     } catch (err) {
       console.error('Error al subir archivo:', err);
       setError('Error al subir el archivo. Por favor, inténtelo de nuevo.');
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
@@ -89,54 +111,96 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
     }
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('border-blue-500', 'bg-blue-500/10');
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-500/10');
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-500/10');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(files[0]);
+      fileInputRef.current.files = dataTransfer.files;
+      handleFileChange({ target: { files: dataTransfer.files } });
+    }
+  };
+
   return (
-    <div className="mb-6">
-      <label className="block text-black text-sm font-bold mb-2">
-        Multimedia
+    <div className="space-y-4">
+      <label className="block text-sm font-semibold text-slate-300">
+        <Upload className="inline w-4 h-4 mr-1 mb-1" />
+        Contenido Multimedia
       </label>
       
       {/* Visualización del archivo multimedia */}
       {mediaUrl ? (
-        <div className="mb-4">
-          <div className="bg-gray-100 p-4 rounded-lg mb-2">
-            <div className="flex flex-col items-center">
-              {mediaType === 'video' ? (
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+          <div className="flex flex-col items-center">
+            {mediaType === 'video' ? (
+              <div className="relative group">
                 <video 
-                  className="max-w-full max-h-[300px] object-contain mb-2" 
+                  className="max-w-full max-h-[300px] object-contain rounded-xl shadow-2xl" 
                   src={mediaUrl} 
                   controls 
                 />
-              ) : (
+                <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-full flex items-center">
+                  <Video className="w-4 h-4 text-blue-400 mr-1" />
+                  <span className="text-sm text-slate-300">Video</span>
+                </div>
+              </div>
+            ) : (
+              <div className="relative group">
                 <img 
-                  className="max-w-full max-h-[300px] object-contain mb-2" 
+                  className="max-w-full max-h-[300px] object-contain rounded-xl shadow-2xl" 
                   src={mediaUrl} 
                   alt="Vista previa del anuncio" 
                 />
-              )}
-              <button
-                type="button"
-                onClick={handleRemoveMedia}
-                className="mt-2 text-red-600 hover:text-red-800"
-              >
-                Eliminar multimedia
-              </button>
-            </div>
+                <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-full flex items-center">
+                  <Image className="w-4 h-4 text-emerald-400 mr-1" />
+                  <span className="text-sm text-slate-300">Imagen</span>
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleRemoveMedia}
+              className="mt-4 flex items-center px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-all"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Eliminar multimedia
+            </button>
           </div>
         </div>
       ) : (
-        <div className="mb-4">
-          <div className="flex items-center justify-center w-full">
-            {/* Área para arrastrar y soltar archivos */}
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                </svg>
-                <p className="mb-2 text-sm text-black">
+        <div>
+          <div 
+            className="relative bg-slate-800/50 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer hover:bg-slate-800/70 hover:border-slate-600 transition-all"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <label className="flex flex-col items-center justify-center p-8 cursor-pointer">
+              <div className="flex flex-col items-center justify-center">
+                <div className="p-4 bg-slate-700/50 rounded-full mb-4">
+                  <Upload className="w-8 h-8 text-slate-400" />
+                </div>
+                <p className="mb-2 text-sm text-slate-300">
                   <span className="font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
-                <p className="text-xs text-black">
+                <p className="text-xs text-slate-400">
                   Imágenes (PNG, JPG, GIF, WebP) o Videos (MP4, WebM, OGG)
+                </p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Tamaño máximo: 10MB
                 </p>
               </div>
               <input 
@@ -149,23 +213,44 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
               />
             </label>
           </div>
+          
+          {/* Progress bar */}
+          {uploading && uploadProgress > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-slate-400">Subiendo archivo...</span>
+                <span className="text-sm text-slate-400">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-700 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
       
-      {/* Indicador de carga */}
-      {uploading && (
-        <div className="mb-4">
-          <p className="text-black">Subiendo...</p>
+      {/* Success message */}
+      {uploadProgress === 100 && !uploading && (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 backdrop-blur">
+          <div className="flex items-center">
+            <Check className="w-5 h-5 text-emerald-400 mr-3" />
+            <p className="text-emerald-400">Archivo subido exitosamente</p>
+          </div>
         </div>
       )}
       
-      {/* Mensaje de error */}
+      {/* Error message */}
       {error && (
-        <div className="mb-4">
-          <p className="text-black text-sm">{error}</p>
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
+            <p className="text-red-400">{error}</p>
+          </div>
         </div>
       )}
     </div>
   );
 }
-

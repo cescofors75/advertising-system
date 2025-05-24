@@ -1,12 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Calendar, Clock, Plus, Trash2, AlertCircle, Info, Sun, Sunset, Moon } from 'lucide-react';
 
-// Time slot definitions (same as in TimeSlotTabs.js)
+// Time slot definitions
 const TIME_SLOTS = {
-  morning: { name: 'Day', startHour: 0, endHour: 8, color: 'blue' },
-  afternoon: { name: 'Afternoon', startHour: 8, endHour: 16, color: 'green' },
-  night: { name: 'Night', startHour: 16, endHour: 24, color: 'purple' }
+  morning: { 
+    name: 'Día', 
+    startHour: 0, 
+    endHour: 8, 
+    color: 'blue',
+    icon: Sun,
+    gradient: 'from-blue-400 to-blue-600'
+  },
+  afternoon: { 
+    name: 'Tarde', 
+    startHour: 8, 
+    endHour: 16, 
+    color: 'green',
+    icon: Sunset,
+    gradient: 'from-emerald-400 to-green-600'
+  },
+  night: { 
+    name: 'Noche', 
+    startHour: 16, 
+    endHour: 24, 
+    color: 'purple',
+    icon: Moon,
+    gradient: 'from-purple-400 to-purple-600'
+  }
 };
 
 // Maximum ads per time slot
@@ -89,7 +111,7 @@ export default function ScheduleForm({ initialSchedules = [], onChange, existing
           // Set warning if schedule spans multiple time slots
           if (slots.length > 1) {
             setTimeSlotWarning(
-              "This schedule spans multiple time slots. When possible, try to schedule within a single time slot."
+              "Esta programación abarca múltiples franjas horarias. Cuando sea posible, intenta programar dentro de una sola franja."
             );
           } else {
             setTimeSlotWarning(null);
@@ -196,7 +218,13 @@ export default function ScheduleForm({ initialSchedules = [], onChange, existing
   const formatDateTime = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
-    return date.toLocaleString();
+    return date.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   // Get time slots for a schedule
@@ -206,160 +234,183 @@ export default function ScheduleForm({ initialSchedules = [], onChange, existing
 
   // Render a badge for each time slot
   const renderTimeSlotBadges = (slots) => {
-    return slots.map(slot => (
-      <span 
-        key={slot.key} 
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 bg-${slot.color}-100 text-${slot.color}-800`}
-      >
-        {slot.name}
-      </span>
-    ));
+    return slots.map(slot => {
+      const Icon = slot.icon;
+      return (
+        <span 
+          key={slot.key} 
+          className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gradient-to-r ${slot.gradient} text-white mr-1`}
+        >
+          <Icon className="w-3 h-3 mr-1" />
+          {slot.name}
+        </span>
+      );
+    });
   };
 
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold mb-4">Programación</h3>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+          <Calendar className="inline w-5 h-5 mr-2 text-blue-400" />
+          Programación Temporal
+        </h3>
+        <p className="text-sm text-slate-400">
+          Define cuándo se mostrará este anuncio
+        </p>
+      </div>
       
       {/* Time Slot Guide */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
-        <h4 className="text-sm font-medium text-black mb-2">Guía de Franjas Horarias</h4>
-        <p className="text-xs text-black mb-3">
-          Los anuncios se organizan en tres franjas horarias. Intenta programar dentro de una única franja cuando sea posible.
-          Cada franja tiene un límite de 36 anuncios (12 por minuto durante 8 horas).
+      <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/50">
+        <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
+          <Info className="w-4 h-4 mr-2 text-blue-400" />
+          Guía de Franjas Horarias
+        </h4>
+        <p className="text-xs text-slate-400 mb-3">
+          Los anuncios se organizan en tres franjas. Cada franja permite hasta {MAX_ADS_PER_SLOT} anuncios simultáneos.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(TIME_SLOTS).map(([key, slot]) => (
-            <div 
-              key={key} 
-              className={`flex items-center px-3 py-1 rounded-md bg-${slot.color}-50 border border-${slot.color}-200`}
-            >
-              <span className={`w-3 h-3 rounded-full bg-${slot.color}-500 mr-2`}></span>
-              <span className="text-xs font-medium">{slot.name}: {slot.startHour}:00 - {slot.endHour}:00</span>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          {Object.entries(TIME_SLOTS).map(([key, slot]) => {
+            const Icon = slot.icon;
+            return (
+              <div 
+                key={key} 
+                className="flex items-center px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-600/50"
+              >
+                <Icon className="w-4 h-4 mr-2 text-slate-400" />
+                <span className="text-xs">
+                  <span className="font-medium text-slate-300">{slot.name}:</span>
+                  <span className="text-slate-400 ml-1">{slot.startHour}:00 - {slot.endHour}:00</span>
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
       
       {/* Lista de Programaciones */}
-      {schedules.length > 0 ? (
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-black mb-2">Programaciones actuales:</h4>
-          <ul className="bg-white rounded-md p-2">
+      {schedules.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium text-slate-300 mb-3">Programaciones actuales:</h4>
+          <div className="space-y-2">
             {schedules.map((schedule) => (
-              <li 
+              <div 
                 key={schedule.id} 
-                className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0"
+                className="flex items-center justify-between bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hover:bg-slate-800/70 transition-colors"
               >
                 <div className="flex flex-col">
-                  <span className="text-sm text-black">
-                    {formatDateTime(schedule.start_time)} hasta {formatDateTime(schedule.end_time)}
+                  <span className="text-sm text-slate-300 flex items-center">
+                    <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                    {formatDateTime(schedule.start_time)} → {formatDateTime(schedule.end_time)}
                   </span>
-                  <div className="mt-1">
+                  <div className="mt-2">
                     {renderTimeSlotBadges(getScheduleTimeSlots(schedule))}
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleRemoveSchedule(schedule.id)}
-                  className="text-red-500 hover:text-red-700 text-sm"
+                  className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-all ml-4"
                 >
-                  Eliminar
+                  <Trash2 className="w-4 h-4" />
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
-      ) : (
-        <p className="text-sm text-black mb-4">No hay programaciones establecidas. Añade una a continuación.</p>
       )}
       
       {/* Formulario para Añadir Nueva Programación */}
-      <div className="border p-4 rounded-md bg-gray-50">
-        <h4 className="text-sm font-medium text-black mb-3">Añadir Nueva Programación</h4>
+      <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600/50">
+        <h4 className="text-sm font-medium text-slate-300 mb-4">Añadir Nueva Programación</h4>
         
-        {/* Selected Time Slots */}
+        {/* Selected Time Slots Preview */}
         {selectedTimeSlots.length > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-md">
-            <p className="text-xs text-black mb-2">Esta programación caerá en las siguientes franjas:</p>
+          <div className="mb-4 bg-slate-800/50 rounded-lg p-3 border border-slate-600/50">
+            <p className="text-xs text-slate-400 mb-2">Esta programación afectará a las franjas:</p>
             <div className="flex flex-wrap gap-2">
               {renderTimeSlotBadges(selectedTimeSlots)}
             </div>
             
             {timeSlotWarning && (
-              <p className="mt-2 text-xs text-orange-600">
-                {timeSlotWarning}
-              </p>
+              <div className="mt-3 flex items-start">
+                <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 mr-2 flex-shrink-0" />
+                <p className="text-xs text-amber-400">
+                  {timeSlotWarning}
+                </p>
+              </div>
             )}
           </div>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-black mb-1">
+            <label className="block text-xs font-medium text-slate-400 mb-2">
               Fecha de inicio
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md text-black"
+              className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-black mb-1">
+            <label className="block text-xs font-medium text-slate-400 mb-2">
               Hora de inicio
             </label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md text-black"
+              className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-black mb-1">
+            <label className="block text-xs font-medium text-slate-400 mb-2">
               Fecha de fin
             </label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md text-black"
+              className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-black mb-1">
+            <label className="block text-xs font-medium text-slate-400 mb-2">
               Hora de fin
             </label>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md text-black"
+              className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
         </div>
         
         {error && (
-          <div className="mb-3">
-            <p className="text-black text-xs">{error}</p>
+          <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <div className="flex items-center">
+              <AlertCircle className="w-4 h-4 text-red-400 mr-2 flex-shrink-0" />
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
           </div>
         )}
         
-        <div>
-          <button
-            type="button"
-            onClick={handleAddSchedule}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm"
-          >
-            Añadir Programación
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleAddSchedule}
+          className="w-full md:w-auto px-4 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white rounded-lg font-medium transition-all flex items-center justify-center transform hover:scale-105 shadow-lg"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Añadir Programación
+        </button>
       </div>
     </div>
   );
 }
-

@@ -5,6 +5,7 @@ import supabase from '@/lib/supabaseClient';
 import AdList from '@/components/admin/AdList';
 import AdForm from '@/components/admin/AdForm';
 import TimeSlotTabs from '@/components/admin/TimeSlotTabs';
+import { Plus, Sparkles, AlertCircle } from 'lucide-react';
 
 export default function AdminPage() {
   const [advertisements, setAdvertisements] = useState([]);
@@ -114,21 +115,42 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-black">Sistema de Gestión de Anuncios</h1>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent flex items-center">
+              <Sparkles className="w-10 h-10 mr-3 text-blue-400" />
+              Sistema de Gestión de Anuncios
+            </h1>
+            {!isEditing && (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center transition-all transform hover:scale-105 shadow-lg"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Nuevo Anuncio
+              </button>
+            )}
+          </div>
+          <p className="text-slate-300 text-lg">Gestiona y programa tus anuncios publicitarios en tiempo real</p>
+        </div>
         
         {/* Mensaje de error */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-black px-4 py-3 rounded mb-4">
-            {error}
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6 backdrop-blur">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
+              <p className="text-red-400">{error}</p>
+            </div>
           </div>
         )}
         
         {isEditing ? (
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-black">
-              {currentAd?.id ? 'Editar Anuncio' : 'Añadir Nuevo Anuncio'}
+          <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-8 border border-slate-700/50 shadow-2xl mb-8">
+            <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+              {currentAd?.id ? 'Editar Anuncio' : 'Crear Nuevo Anuncio'}
             </h2>
             <AdForm 
               ad={currentAd} 
@@ -136,87 +158,91 @@ export default function AdminPage() {
               onSubmit={handleFormSubmit} 
             />
           </div>
-        ) : (
-          <div className="flex justify-end mb-4">
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-            >
-              Añadir Nuevo Anuncio
-            </button>
-          </div>
-        )}
+        ) : null}
         
         {/* Time Slot Tabs */}
         {!loading && !isEditing && (
-          <TimeSlotTabs 
-            advertisements={advertisements}
-            onSelectedAdsChange={handleSelectedAdsChange}
-          />
+          <div className="mb-8">
+            <TimeSlotTabs 
+              advertisements={advertisements}
+              onSelectedAdsChange={handleSelectedAdsChange}
+            />
+          </div>
         )}
         
-        {/* Lista de anuncios - Solo mostrar si hay anuncios filtrados y no estamos cargando */}
+        {/* Lista de anuncios */}
         {loading ? (
-          <div className="text-center py-10">
-            <p className="text-black">Cargando anuncios...</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-300 text-lg">Cargando anuncios...</p>
           </div>
         ) : (
-          filteredAds.length > 0 ? (
+          !isEditing && filteredAds.length > 0 && (
             <AdList 
               advertisements={filteredAds} 
               onEdit={handleEdit} 
               onDelete={handleDelete}
               onPreview={handlePreview}
             />
-          ) : null // No mostrar nada si no hay anuncios filtrados
+          )
         )}
         
         {/* Modal de Vista Previa */}
         {showPreview && previewAd && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
-              <div className="flex justify-between items-center border-b p-4">
-                <h3 className="text-xl font-bold text-black">Vista previa: {previewAd.title}</h3>
-                <button 
-                  onClick={closePreview}
-                  className="text-black hover:text-gray-700"
-                >
-                  ✕
-                </button>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+            <div className="bg-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-700/50">
+              <div className="bg-gradient-to-r from-blue-500/20 to-emerald-500/20 backdrop-blur border-b border-slate-700/50 p-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                    Vista previa: {previewAd.title}
+                  </h3>
+                  <button 
+                    onClick={closePreview}
+                    className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700/50 rounded-lg"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="p-4 flex flex-col items-center">
-                <h2 className="text-2xl font-bold mb-4 text-black">{previewAd.title}</h2>
+              
+              <div className="p-8 flex flex-col items-center">
+                <h2 className="text-3xl font-bold mb-6 text-center">{previewAd.title}</h2>
                 
-                <div className="my-4 w-full flex justify-center">
+                <div className="my-6 w-full flex justify-center">
                   {previewAd.media_url ? (
                     previewAd.media_type === 'video' ? (
                       <video 
-                        className="max-w-full max-h-[50vh] object-contain" 
+                        className="max-w-full max-h-[50vh] object-contain rounded-xl shadow-2xl" 
                         src={previewAd.media_url} 
                         controls 
                       />
                     ) : (
                       <img 
-                        className="max-w-full max-h-[50vh] object-contain" 
+                        className="max-w-full max-h-[50vh] object-contain rounded-xl shadow-2xl" 
                         src={previewAd.media_url} 
                         alt={previewAd.title} 
                       />
                     )
                   ) : (
-                    <div className="w-full max-w-lg h-48 bg-gray-200 flex items-center justify-center rounded">
-                      <p className="text-black">No hay contenido multimedia disponible</p>
+                    <div className="w-full max-w-lg h-64 bg-slate-700/50 flex items-center justify-center rounded-xl border border-slate-600/50">
+                      <p className="text-slate-400">No hay contenido multimedia disponible</p>
                     </div>
                   )}
                 </div>
                 
-                <p className="text-black max-w-2xl text-center mt-4">
-                  {previewAd.description}
-                </p>
+                {previewAd.description && (
+                  <p className="text-slate-300 max-w-2xl text-center mt-6 text-lg">
+                    {previewAd.description}
+                  </p>
+                )}
               </div>
-              <div className="border-t p-4 flex justify-end">
+              
+              <div className="border-t border-slate-700/50 p-6 flex justify-end bg-slate-800/50">
                 <button 
                   onClick={closePreview}
-                  className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md"
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-xl font-semibold transition-all"
                 >
                   Cerrar Vista Previa
                 </button>

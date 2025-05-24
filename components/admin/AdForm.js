@@ -3,12 +3,34 @@
 import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabaseClient';
 import MediaUpload from './MediaUpload';
+import { Sun, Sunset, Moon, Globe, QrCode, AlertCircle, Save, X } from 'lucide-react';
 
-// Time slot definitions (same as in other components)
+// Time slot definitions
 const TIME_SLOTS = {
-  morning: { name: 'Day', startHour: 0, endHour: 8, color: 'blue' },
-  afternoon: { name: 'Afternoon', startHour: 8, endHour: 16, color: 'green' },
-  night: { name: 'Night', startHour: 16, endHour: 24, color: 'purple' }
+  morning: { 
+    name: 'Día', 
+    startHour: 0, 
+    endHour: 8, 
+    color: 'blue',
+    icon: Sun,
+    gradient: 'from-blue-400 to-blue-600'
+  },
+  afternoon: { 
+    name: 'Tarde', 
+    startHour: 8, 
+    endHour: 16, 
+    color: 'green',
+    icon: Sunset,
+    gradient: 'from-emerald-400 to-green-600'
+  },
+  night: { 
+    name: 'Noche', 
+    startHour: 16, 
+    endHour: 24, 
+    color: 'purple',
+    icon: Moon,
+    gradient: 'from-purple-400 to-purple-600'
+  }
 };
 
 export default function AdForm({ ad, onCancel, onSubmit }) {
@@ -139,16 +161,20 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-black px-4 py-3 rounded mb-4">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
+            <p className="text-red-400">{error}</p>
+          </div>
         </div>
       )}
       
-      <div className="mb-4">
-        <label className="block text-black text-sm font-bold mb-2" htmlFor="title">
-          Título <span className="text-red-500">*</span>
+      {/* Título */}
+      <div>
+        <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="title">
+          Título del Anuncio <span className="text-red-400">*</span>
         </label>
         <input
           id="title"
@@ -156,13 +182,14 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           type="text"
           value={formData.title}
           onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-black leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="Título del anuncio"
+          className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          placeholder="Ej: Promoción Especial de Verano"
         />
       </div>
       
-      <div className="mb-4">
-        <label className="block text-black text-sm font-bold mb-2" htmlFor="description">
+      {/* Descripción */}
+      <div>
+        <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="description">
           Descripción
         </label>
         <textarea
@@ -170,15 +197,17 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           name="description"
           value={formData.description}
           onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-black leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="Descripción del anuncio"
+          className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+          placeholder="Describe tu anuncio..."
           rows="4"
         />
       </div>
       
-      <div className="mb-4">
-        <label className="block text-black text-sm font-bold mb-2" htmlFor="website_url">
-          URL del sitio web
+      {/* URL del sitio web */}
+      <div>
+        <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="website_url">
+          <Globe className="inline w-4 h-4 mr-1 mb-1" />
+          URL del Sitio Web
         </label>
         <input
           id="website_url"
@@ -186,115 +215,146 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           type="url"
           value={formData.website_url || ""}
           onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-black leading-tight focus:outline-none focus:shadow-outline"
+          className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           placeholder="https://ejemplo.com"
         />
       </div>
 
-      <div className="mb-4">
-        <label className="flex items-center">
+      {/* QR Code Toggle */}
+      <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/50">
+        <label className="flex items-center cursor-pointer">
           <input
             type="checkbox"
             name="show_qr_code"
             checked={formData.show_qr_code || false}
             onChange={handleChange}
-            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+            className="sr-only"
           />
-          <span className="ml-2 text-black">Mostrar Código QR (superpuesto en la imagen)</span>
+          <div className={`relative w-12 h-6 rounded-full transition-colors ${
+            formData.show_qr_code ? 'bg-blue-500' : 'bg-slate-600'
+          }`}>
+            <div className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+              formData.show_qr_code ? 'translate-x-6' : 'translate-x-0.5'
+            }`} />
+          </div>
+          <span className="ml-3 text-slate-300 flex items-center">
+            <QrCode className="w-4 h-4 mr-2" />
+            Mostrar Código QR en la imagen
+          </span>
         </label>
 
         {formData.show_qr_code && formData.website_url && (
-          <div className="mt-4 p-4 border rounded-md bg-gray-50">
-            <p className="text-sm text-black mb-2">Vista previa del Código QR:</p>
+          <div className="mt-4 p-4 bg-slate-800/50 rounded-xl">
+            <p className="text-sm text-slate-400 mb-3">Vista previa del Código QR:</p>
             <div className="flex justify-center">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.website_url)}`}
-                alt="Código QR"
-                className="border"
-              />
+              <div className="bg-white p-2 rounded-lg">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.website_url)}`}
+                  alt="Código QR"
+                  className="block"
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
       
+      {/* Media Upload */}
       <MediaUpload
         initialUrl={formData.media_url}
         initialType={formData.media_type}
         onUpload={handleMediaUpload}
       />
       
-      <div className="mb-6">
-        <label className="flex items-center">
+      {/* Estado Activo */}
+      <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/50">
+        <label className="flex items-center cursor-pointer">
           <input
             type="checkbox"
             name="active"
             checked={formData.active}
             onChange={handleChange}
-            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+            className="sr-only"
           />
-          <span className="ml-2 text-black">Activo (visible en pantalla)</span>
+          <div className={`relative w-12 h-6 rounded-full transition-colors ${
+            formData.active ? 'bg-emerald-500' : 'bg-slate-600'
+          }`}>
+            <div className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+              formData.active ? 'translate-x-6' : 'translate-x-0.5'
+            }`} />
+          </div>
+          <span className="ml-3 text-slate-300">
+            Anuncio Activo (visible en pantallas)
+          </span>
         </label>
       </div>
       
       {/* Time Slot Selection */}
-      <div className="mb-6 bg-gray-50 p-5 rounded-md border border-gray-200">
-        <h3 className="text-lg font-semibold mb-4">Selección de Franjas Horarias</h3>
-        <p className="text-sm text-gray-600 mb-3">
-          Seleccione las franjas horarias en las que desea que aparezca este anuncio. Puede seleccionar múltiples franjas.
+      <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600/50">
+        <h3 className="text-lg font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+          Franjas Horarias
+        </h3>
+        <p className="text-sm text-slate-400 mb-4">
+          Selecciona las franjas horarias en las que aparecerá este anuncio
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {Object.keys(TIME_SLOTS).map(slotKey => {
             const slot = TIME_SLOTS[slotKey];
             const isSelected = selectedTimeSlots[slotKey];
-            
-            // Define colors directly instead of using string interpolation
-            let bgColor = isSelected ? 
-              (slot.color === 'blue' ? 'bg-blue-50' : 
-               slot.color === 'green' ? 'bg-green-50' : 'bg-purple-50') : 
-              'bg-white';
-              
-            let borderColor = isSelected ? 
-              (slot.color === 'blue' ? 'border-blue-500' : 
-               slot.color === 'green' ? 'border-green-500' : 'border-purple-500') : 
-              'border-gray-200 hover:border-gray-300';
-              
-            let dotColor = isSelected ? 
-              (slot.color === 'blue' ? 'bg-blue-500' : 
-               slot.color === 'green' ? 'bg-green-500' : 'bg-purple-500') : 
-              'bg-gray-200';
+            const Icon = slot.icon;
             
             return (
               <div 
                 key={slotKey}
                 onClick={() => handleTimeSlotChange(slotKey)}
-                className={`cursor-pointer p-4 rounded-md border-2 transition-colors ${bgColor} ${borderColor}`}
+                className={`cursor-pointer p-4 rounded-xl border-2 transition-all transform hover:scale-105 ${
+                  isSelected 
+                    ? `bg-gradient-to-br ${slot.gradient} border-transparent shadow-lg` 
+                    : 'bg-slate-800/50 border-slate-600 hover:border-slate-500'
+                }`}
               >
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full mr-2 ${dotColor}`} />
-                  <h4 className="font-medium">{slot.name}</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <Icon className={`w-5 h-5 mr-2 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                    <h4 className={`font-semibold ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                      {slot.name}
+                    </h4>
+                  </div>
+                  {isSelected && (
+                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{slot.startHour}:00 - {slot.endHour}:00</p>
+                <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
+                  {slot.startHour}:00 - {slot.endHour}:00
+                </p>
               </div>
             );
           })}
         </div>
       </div>
       
-      <div className="flex justify-end space-x-2 mt-6">
+      {/* Botones de acción */}
+      <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-md"
+          className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-semibold transition-all flex items-center"
           disabled={isSubmitting}
         >
+          <X className="w-5 h-5 mr-2" />
           Cancelar
         </button>
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center transform hover:scale-105 shadow-lg"
           disabled={isSubmitting}
         >
+          <Save className="w-5 h-5 mr-2" />
           {isSubmitting ? 'Guardando...' : ad?.id ? 'Actualizar Anuncio' : 'Crear Anuncio'}
         </button>
       </div>

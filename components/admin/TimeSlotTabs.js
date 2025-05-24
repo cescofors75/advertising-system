@@ -1,12 +1,37 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Sun, Sunset, Moon, Clock, Search, X, AlertTriangle, Info } from 'lucide-react';
 
 // Time slot definitions
 const TIME_SLOTS = {
-  morning: { name: 'Día', startHour: 0, endHour: 8, color: 'blue' },
-  afternoon: { name: 'Tarde', startHour: 8, endHour: 16, color: 'green' },
-  night: { name: 'Noche', startHour: 16, endHour: 24, color: 'purple' }
+  morning: { 
+    name: 'Día', 
+    startHour: 0, 
+    endHour: 8, 
+    color: 'blue',
+    icon: Sun,
+    gradient: 'from-blue-400 to-blue-600',
+    bgGradient: 'from-blue-500/20 to-blue-600/20'
+  },
+  afternoon: { 
+    name: 'Tarde', 
+    startHour: 8, 
+    endHour: 16, 
+    color: 'green',
+    icon: Sunset,
+    gradient: 'from-emerald-400 to-green-600',
+    bgGradient: 'from-emerald-500/20 to-green-600/20'
+  },
+  night: { 
+    name: 'Noche', 
+    startHour: 16, 
+    endHour: 24, 
+    color: 'purple',
+    icon: Moon,
+    gradient: 'from-purple-400 to-purple-600',
+    bgGradient: 'from-purple-500/20 to-purple-600/20'
+  }
 };
 
 // Maximum ads per time slot
@@ -107,53 +132,50 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-8">
       {/* Search bar */}
-      <div className="mb-4">
-        <div className="relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
+      <div className="mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-slate-400" />
           </div>
           <input
             type="text"
-            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-10 py-2 border-gray-300 rounded-md"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl pl-12 pr-12 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Buscar anuncios por título o descripción..."
             value={searchQuery}
             onChange={handleSearchChange}
           />
           {searchQuery && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
               <button
                 type="button"
                 onClick={clearSearch}
-                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                className="text-slate-400 hover:text-white transition-colors p-1 hover:bg-slate-700/50 rounded-lg"
                 aria-label="Limpiar búsqueda"
               >
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+                <X className="h-5 w-5" />
               </button>
             </div>
           )}
         </div>
         {searchQuery && (
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-slate-400">
             Mostrando {filteredAds.length} resultado{filteredAds.length !== 1 ? 's' : ''} para &quot;{searchQuery}&quot;
           </p>
         )}
       </div>
       
       {/* Tab navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex flex-wrap" role="tablist">
+      <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-2 border border-slate-700/50">
+        <nav className="flex flex-wrap gap-2" role="tablist">
           {/* Regular time slot tabs */}
           {Object.keys(TIME_SLOTS).map(slotKey => {
             const slot = TIME_SLOTS[slotKey];
             const isActive = activeTab === slotKey;
             const count = slotCounts[slotKey] || 0;
             const isOverLimit = count > MAX_ADS_PER_SLOT;
+            const Icon = slot.icon;
             
             return (
               <button
@@ -162,17 +184,25 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
                 role="tab"
                 aria-selected={isActive}
                 aria-controls={`${slotKey}-panel`}
-                className={`whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                className={`flex items-center px-4 py-3 rounded-xl font-medium text-sm transition-all transform hover:scale-105 ${
                   isActive
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? `bg-gradient-to-r ${slot.gradient} text-white shadow-lg`
+                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
                 } relative`}
               >
-                {slot.name} ({slot.startHour}:00 - {slot.endHour}:00)
+                <Icon className="w-4 h-4 mr-2" />
+                <span>{slot.name}</span>
+                <span className="ml-1 text-xs opacity-75">
+                  ({slot.startHour}:00-{slot.endHour}:00)
+                </span>
                 
                 {/* Badge showing the count */}
-                <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  isOverLimit ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                <span className={`ml-3 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                  isOverLimit 
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                    : isActive 
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-slate-600/50 text-slate-300'
                 }`}>
                   {count}/{MAX_ADS_PER_SLOT}
                 </span>
@@ -194,16 +224,21 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
             role="tab"
             aria-selected={activeTab === 'unassigned'}
             aria-controls="unassigned-panel"
-            className={`whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors duration-200 ${
+            className={`flex items-center px-4 py-3 rounded-xl font-medium text-sm transition-all transform hover:scale-105 ${
               activeTab === 'unassigned'
-                ? 'border-yellow-500 text-yellow-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'bg-gradient-to-r from-amber-400 to-orange-600 text-white shadow-lg'
+                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            Sin Asignar
+            <Clock className="w-4 h-4 mr-2" />
+            <span>Sin Asignar</span>
             
             {/* Badge showing the count */}
-            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <span className={`ml-3 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === 'unassigned'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-600/50 text-slate-300'
+            }`}>
               {slotCounts.unassigned || 0}
             </span>
           </button>
@@ -212,18 +247,16 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
       
       {/* Warning message if exceeding the limit */}
       {activeTab !== 'unassigned' && (slotCounts[activeTab] || 0) > MAX_ADS_PER_SLOT && (
-        <div className="mt-4 p-4 border-l-4 border-red-500 bg-red-50 rounded-r-md">
+        <div className="mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+              <AlertTriangle className="h-5 w-5 text-red-400" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
+              <h3 className="text-sm font-medium text-red-400">
                 Límite de anuncios excedido
               </h3>
-              <p className="mt-1 text-sm text-red-700">
+              <p className="mt-1 text-sm text-red-300">
                 Esta franja horaria ha excedido el límite máximo de {MAX_ADS_PER_SLOT} anuncios. 
                 Por favor, elimine algunos anuncios o reprograme algunos a una franja horaria diferente.
               </p>
@@ -233,19 +266,17 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
       )}
       
       {/* Message for the unassigned tab */}
-      {activeTab === 'unassigned' && (
-        <div className="mt-4 p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded-r-md">
+      {activeTab === 'unassigned' && slotCounts.unassigned > 0 && (
+        <div className="mt-4 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 backdrop-blur">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+              <Info className="h-5 w-5 text-amber-400" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
+              <h3 className="text-sm font-medium text-amber-400">
                 Anuncios sin asignar
               </h3>
-              <p className="mt-1 text-sm text-yellow-700">
+              <p className="mt-1 text-sm text-amber-300">
                 Estos anuncios no tienen franjas horarias asignadas. Para asignar una franja horaria, 
                 edite el anuncio y seleccione al menos una franja horaria.
               </p>
@@ -259,19 +290,35 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
         id={`${activeTab}-panel`} 
         role="tabpanel" 
         aria-labelledby={`${activeTab}-tab`}
-        className="mt-4"
+        className="mt-6"
       >
         {showNoAdsMessage ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-12 text-center border border-slate-700/50">
+            <div className="text-slate-400 mb-4">
+              {activeTab === 'unassigned' ? (
+                <Clock className="w-16 h-16 mx-auto opacity-50" />
+              ) : (
+                TIME_SLOTS[activeTab] && React.createElement(TIME_SLOTS[activeTab].icon, {
+                  className: "w-16 h-16 mx-auto opacity-50"
+                })
+              )}
+            </div>
             {searchQuery ? (
-              <p className="text-gray-600">No se encontraron anuncios que coincidan con &ldquo;{searchQuery}&rdquo;</p>
+              <p className="text-slate-400">No se encontraron anuncios que coincidan con &quot;{searchQuery}&quot;</p>
             ) : (
-              <p className="text-gray-600">No hay anuncios en esta franja horaria</p>
+              <p className="text-slate-400">No hay anuncios en esta franja horaria</p>
             )}
           </div>
         ) : (
-          <div className="text-sm text-gray-600 mb-2">
-            Mostrando {filteredAds.length} anuncio{filteredAds.length !== 1 ? 's' : ''}
+          <div className="flex items-center justify-between text-sm text-slate-400 mb-4">
+            <span>Mostrando {filteredAds.length} anuncio{filteredAds.length !== 1 ? 's' : ''}</span>
+            {activeTab !== 'unassigned' && (
+              <div className={`flex items-center px-3 py-1 rounded-lg bg-gradient-to-r ${TIME_SLOTS[activeTab]?.bgGradient || ''}`}>
+                <span className="font-medium">
+                  Ocupación: {((slotCounts[activeTab] / MAX_ADS_PER_SLOT) * 100).toFixed(0)}%
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
