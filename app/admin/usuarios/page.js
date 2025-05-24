@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabaseClient';
+import { Users, UserPlus, UserCheck, UserX, RefreshCw, Sparkles, AlertCircle, X, Check, Info } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -207,264 +208,318 @@ Después de crear el usuario en Supabase, actualiza esta página.`);
     alert(`Funcionalidad limitada: Para restablecer la contraseña, debes usar el panel de Supabase directamente para el usuario con email: ${email || "desconocido"}`);
   };
 
-  // Mostrar información de depuración
-  const showDebugInfo = () => {
-    if (!userProfile || !currentUser) return null;
-    
-    return (
-      <div className="mt-8 bg-gray-50 p-4 rounded-md border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-700 mb-2">Información de Depuración</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-500">ID Usuario:</p>
-            <p className="text-gray-800 mb-2">{currentUser.id}</p>
-            
-            <p className="text-sm font-semibold text-gray-500">Email:</p>
-            <p className="text-gray-800 mb-2">{currentUser.email}</p>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-500">Rol:</p>
-            <p className="text-gray-800 mb-2">{userProfile.role}</p>
-            
-            <p className="text-sm font-semibold text-gray-500">Estado:</p>
-            <p className="text-gray-800 mb-2">{userProfile.is_active ? 'Activo' : 'Inactivo'}</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Gestión de Usuarios</h1>
-        <button
-          onClick={() => setIsAddingUser(true)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-        >
-          Añadir Usuario
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-          <p>{error}</p>
-          <div className="mt-2">
-            <a href="/admin/check-admin" className="underline">
-              Verificar permisos de administrador
-            </a>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent flex items-center">
+              <Users className="w-10 h-10 mr-3 text-blue-400" />
+              Gestión de Usuarios
+            </h1>
+            {!isAddingUser && (
+              <button 
+                onClick={() => setIsAddingUser(true)}
+                className="bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center transition-all transform hover:scale-105 shadow-lg"
+              >
+                <UserPlus className="w-5 h-5 mr-2" />
+                Nuevo Usuario
+              </button>
+            )}
+          </div>
+          <p className="text-slate-300 text-lg">Administra usuarios y permisos de acceso al sistema</p>
+        </div>
+        
+        {/* Mensaje de error */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6 backdrop-blur">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
+              <p className="text-red-400">{error}</p>
+            </div>
+            <div className="mt-2 pl-8">
+              <a href="/admin/check-admin" className="text-blue-400 hover:text-blue-300 underline">
+                Verificar permisos de administrador →
+              </a>
+            </div>
+          </div>
+        )}
+        
+        {isAddingUser ? (
+          <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-8 border border-slate-700/50 shadow-2xl mb-8">
+            <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 flex items-center">
+              <UserPlus className="w-6 h-6 mr-2 text-blue-400" />
+              Crear Nuevo Usuario
+            </h2>
+            <form onSubmit={handleCreateUser} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="email">
+                    Correo Electrónico <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={newUser.email}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Ej: usuario@ejemplo.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="password">
+                    Contraseña <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={newUser.password}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Mínimo 8 caracteres"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="firstName">
+                    Nombre
+                  </label>
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    value={newUser.firstName}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Nombre del usuario"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="lastName">
+                    Apellido
+                  </label>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    value={newUser.lastName}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Apellido del usuario"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="role">
+                    Rol
+                  </label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={newUser.role}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Visualizador</option>
+                  </select>
+                </div>
+                <div className="flex items-center">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      checked={newUser.isActive}
+                      onChange={handleInputChange}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-12 h-6 rounded-full transition-colors ${
+                      newUser.isActive ? 'bg-emerald-500' : 'bg-slate-600'
+                    }`}>
+                      <div className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+                        newUser.isActive ? 'translate-x-6' : 'translate-x-0.5'
+                      }`} />
+                    </div>
+                    <span className="ml-3 text-slate-300">
+                      Usuario Activo
+                    </span>
+                  </label>
+                </div>
+              </div>
+              
+              <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/50 mt-6">
+                <div className="flex items-start">
+                  <Info className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0 mt-0.5" />
+                  <p className="text-slate-300 text-sm">
+                    Esta versión simplificada solo mostrará los datos que ingresaste. Para crear realmente el usuario, 
+                    necesitarás acceder al panel de Supabase directamente.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingUser(false)}
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-semibold transition-all flex items-center"
+                >
+                  <X className="w-5 h-5 mr-2" />
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all flex items-center transform hover:scale-105 shadow-lg"
+                  disabled={loading}
+                >
+                  <UserPlus className="w-5 h-5 mr-2" />
+                  {loading ? 'Creando...' : 'Crear Usuario'}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+        
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-300 text-lg">Cargando usuarios...</p>
+          </div>
+        ) : (
+          <div className="bg-slate-800/50 backdrop-blur rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-slate-900/50 border-b border-slate-700/50">
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Usuario
+                    </th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Rol
+                    </th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50">
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-8 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <Users className="w-16 h-16 text-slate-500 mb-4" />
+                          <p className="text-slate-400 text-lg">No hay usuarios registrados</p>
+                          <p className="text-slate-500 text-sm mt-2">Crea un nuevo usuario para comenzar</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((user) => (
+                      <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="text-sm font-medium text-white flex items-center">
+                              <span className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold mr-3">
+                                {user.first_name ? user.first_name.charAt(0) : '?'}
+                              </span>
+                              {user.first_name} {user.last_name}
+                            </div>
+                            <div className="text-sm text-slate-400 mt-1 pl-11">
+                              {user.email || "Email no disponible"}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'editor' 
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                              : user.role === 'admin'
+                                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          }`}>
+                            {user.role === 'editor' ? 'Editor' : 
+                             user.role === 'admin' ? 'Administrador' : 'Visualizador'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => toggleUserActive(user.user_id, user.is_active)}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              user.is_active 
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            }`}
+                          >
+                            {user.is_active ? (
+                              <>
+                                <UserCheck className="w-3 h-3 mr-1" />
+                                Activo
+                              </>
+                            ) : (
+                              <>
+                                <UserX className="w-3 h-3 mr-1" />
+                                Inactivo
+                              </>
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end space-x-1">
+                            <button
+                              onClick={() => resetPassword(user.email)}
+                              className="p-2 bg-slate-700/50 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-lg transition-all group"
+                              title="Resetear contraseña"
+                            >
+                              <RefreshCw className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-8 bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
+          <div className="flex items-start">
+            <Sparkles className="w-6 h-6 text-blue-400 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                Información sobre limitaciones
+              </h3>
+              <p className="mt-2 text-slate-400 text-sm">
+                Esta versión simplificada de la gestión de usuarios tiene limitaciones debido a las restricciones 
+                de seguridad de Supabase:
+              </p>
+              <ul className="mt-3 space-y-1 text-slate-400 text-sm">
+                <li className="flex items-start">
+                  <span className="text-emerald-400 mr-2">•</span>
+                  La creación de usuarios requiere acceso al panel de Supabase
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-400 mr-2">•</span>
+                  El restablecimiento de contraseñas también debe hacerse desde el panel de Supabase
+                </li>
+                <li className="flex items-start">
+                  <span className="text-emerald-400 mr-2">•</span>
+                  La información de email y último acceso puede no estar disponible
+                </li>
+              </ul>
+              <p className="mt-3 text-slate-400 text-sm">
+                Para funcionalidad completa, necesitarías configurar funciones Edge o serverless en Supabase 
+                con permisos administrativos adecuados.
+              </p>
+            </div>
           </div>
         </div>
-      )}
-
-      {isAddingUser && (
-        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Añadir Nuevo Usuario</h2>
-          <form onSubmit={handleCreateUser}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                  Correo Electrónico*
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={newUser.email}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                  Contraseña*
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={newUser.password}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="firstName">
-                  Nombre
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={newUser.firstName}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="lastName">
-                  Apellido
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={newUser.lastName}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
-                  Rol
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  value={newUser.role}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                >
-                  <option value="editor">Editor</option>
-                  <option value="viewer">Visualizador</option>
-                </select>
-              </div>
-              <div className="flex items-center">
-                <input
-                  id="isActive"
-                  name="isActive"
-                  type="checkbox"
-                  checked={newUser.isActive}
-                  onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-gray-700 text-sm font-bold" htmlFor="isActive">
-                  Usuario Activo
-                </label>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={() => setIsAddingUser(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                disabled={loading}
-              >
-                {loading ? 'Creando...' : 'Crear Usuario'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="text-center py-8">
-          <p className="text-gray-600">Cargando usuarios...</p>
-        </div>
-      ) : (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Usuario
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rol
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No hay usuarios registrados o no tienes permisos para verlos
-                  </td>
-                </tr>
-              ) : (
-                users.map((user) => (
-                  <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.first_name} {user.last_name}
-                          </div>
-                          <div className="text-sm text-gray-500">{user.email || "Email no disponible"}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'editor' 
-                          ? 'bg-green-100 text-green-800' 
-                          : user.role === 'admin'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.role === 'editor' ? 'Editor' : 
-                         user.role === 'admin' ? 'Administrador' : 'Visualizador'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => toggleUserActive(user.user_id, user.is_active)}
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.is_active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {user.is_active ? 'Activo' : 'Inactivo'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => resetPassword(user.email)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        Resetear Contraseña
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-      
-      {/* Mostrar información de depuración */}
-      {showDebugInfo()}
-      
-      <div className="mt-8 bg-blue-50 p-4 rounded-md border border-blue-200">
-        <h3 className="text-lg font-bold text-blue-800 mb-2">Información sobre limitaciones</h3>
-        <p className="text-blue-600 mb-3">
-          Esta versión simplificada de la gestión de usuarios tiene limitaciones debido a las restricciones de seguridad de Supabase:
-        </p>
-        <ul className="list-disc list-inside text-blue-600 space-y-1">
-          <li>La creación de usuarios requiere acceso al panel de Supabase</li>
-          <li>El restablecimiento de contraseñas también debe hacerse desde el panel de Supabase</li>
-          <li>La información de email y último acceso puede no estar disponible</li>
-        </ul>
-        <p className="text-blue-600 mt-3">
-          Para funcionalidad completa, necesitarías configurar funciones Edge o serverless en Supabase 
-          con permisos administrativos adecuados.
-        </p>
       </div>
     </div>
   );
