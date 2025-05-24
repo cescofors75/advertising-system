@@ -965,7 +965,7 @@ export default function DisplayPage() {
             >
             {/* Title with premium styling */}
             <div className="text-center mb-8">
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400 mb-4 leading-tight tracking-tight">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-200 to-orange-400 mb-4 leading-tight tracking-tight">
                 {currentAd.title}
               </h1>
               <div className="w-32 h-1 bg-gradient-to-r from-orange-400 to-orange-600 mx-auto rounded-full"></div>
