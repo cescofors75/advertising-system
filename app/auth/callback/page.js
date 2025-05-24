@@ -22,7 +22,7 @@ export default function AuthCallbackPage() {
           const { data: userData } = await supabase.auth.getUser();
           
           // Verificar si el usuario tiene permiso
-          if (userData.user.email === 'cescofors75@gmail.com') {
+          if (userData.user.email === 'cescofors75@gmail.com' || userData.user.email === 'info@baco.cat') {
             setMessage('Autenticación exitosa. Redirigiendo...');
             router.push('/admin');
           } else {

@@ -22,7 +22,7 @@ export default function LoginPage() {
         setUser(userData.user);
         
         // Verificar si el usuario tiene acceso
-        if (userData.user.email === 'cescofors75@gmail.com') {
+        if (userData.user.email === 'cescofors75@gmail.com'|| userData.user.email === 'info@baco.cat') {
           router.push('/admin');
         } else {
           setError('No tienes permiso para acceder al panel de administración.');
@@ -48,7 +48,7 @@ export default function LoginPage() {
       if (error) throw error;
       
       // Verificar si el usuario tiene acceso
-      if (data.user.email === 'cescofors75@gmail.com') {
+      if (data.user.email === 'cescofors75@gmail.com' || userData.user.email === 'info@baco.cat') {
         router.push('/admin');
       } else {
         setError('No tienes permiso para acceder al panel de administración.');
