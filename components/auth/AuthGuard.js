@@ -12,33 +12,42 @@ export default function AuthGuard({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Verificar si hay una sesión activa
-        const { data, error } = await supabase.auth.getSession();
+        setLoading(true);
         
-        if (error) {
-          throw error;
+        // 1. Verificar si hay una sesión activa
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error al verificar sesión:', sessionError);
+          throw sessionError;
         }
         
-        if (data.session) {
-          // Obtener información del usuario
-          const { data: userData, error: userError } = await supabase.auth.getUser();
-          
-          if (userError) {
-            throw userError;
-          }
-          
-          // Verificar si el usuario tiene permiso (solo cescofors75@gmail.com)
-          if (userData.user.email === 'cescofors75@gmail.com') {
-            setAuthenticated(true);
-          } else {
-            console.log('Usuario sin permiso:', userData.user.email);
-            await supabase.auth.signOut();
-            router.push('/auth/login');
-          }
-        } else {
-          console.log('No hay sesión activa');
+        if (!sessionData.session) {
+          console.log('No hay sesión activa, redirigiendo a login');
           router.push('/auth/login');
+          return;
         }
+
+        // 2. La sesión existe, obtener información del usuario
+        console.log('Sesión encontrada, verificando usuario');
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('Error al obtener usuario:', userError);
+          throw userError;
+        }
+
+        if (!userData || !userData.user) {
+          console.log('No se pudo obtener información del usuario');
+          router.push('/auth/login');
+          return;
+        }
+
+        // 3. Ahora permitimos el acceso a cualquier usuario autenticado
+        // Ya no verificamos si es admin aquí - cada página verificará los permisos específicos
+        console.log('Usuario autenticado:', userData.user.email);
+        setAuthenticated(true);
+        
       } catch (err) {
         console.error('Error al verificar autenticación:', err);
         router.push('/auth/login');
@@ -48,33 +57,6 @@ export default function AuthGuard({ children }) {
     };
 
     checkAuth();
-
-    // Configurar listener para cambios en la autenticación
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Evento de autenticación:', event);
-      
-      if (event === 'SIGNED_OUT') {
-        setAuthenticated(false);
-        router.push('/auth/login');
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (session) {
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user.email === 'cescofors75@gmail.com') {
-            setAuthenticated(true);
-          } else {
-            console.log('Usuario sin permiso en listener:', userData.user.email);
-            await supabase.auth.signOut();
-            router.push('/auth/login');
-          }
-        }
-      }
-    });
-
-    return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
-    };
   }, [router]);
 
   if (loading) {

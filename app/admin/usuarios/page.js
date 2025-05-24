@@ -8,6 +8,8 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAddingUser, setIsAddingUser] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   
   // Formulario para nuevo usuario
   const [newUser, setNewUser] = useState({
@@ -15,47 +17,107 @@ export default function UsersPage() {
     password: '',
     firstName: '',
     lastName: '',
-    role: 'editor', // editor por defecto, admin solo para ti
+    role: 'editor',
     isActive: true
   });
 
-  // Cargar lista de usuarios
-  const fetchUsers = async () => {
+  // Verificar el usuario actual primero
+  useEffect(() => {
+    const checkCurrentUser = async () => {
+      try {
+        console.log("Verificando usuario actual...");
+        setLoading(true);
+        
+        // 1. Obtener usuario actual
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error("Error al obtener usuario:", userError);
+          throw userError;
+        }
+        
+        if (!user) {
+          console.error("No hay sesión de usuario");
+          throw new Error("No hay sesión de usuario");
+        }
+        
+        console.log("Usuario encontrado:", user.email);
+        setCurrentUser(user);
+        
+        // 2. Obtener perfil del usuario para verificar si es admin
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (profileError) {
+          console.error("Error al obtener perfil:", profileError);
+          throw profileError;
+        }
+        
+        if (!profileData) {
+          console.error("No se encontró perfil para el usuario");
+          throw new Error("No se encontró perfil para el usuario");
+        }
+        
+        console.log("Perfil de usuario:", profileData);
+        setUserProfile(profileData);
+        
+        if (profileData.role !== 'admin') {
+          console.error("El usuario no tiene rol de administrador:", profileData.role);
+          throw new Error("El usuario no tiene rol de administrador");
+        }
+        
+        console.log("✅ Usuario es administrador. Cargando datos...");
+        
+        // 3. Si llegamos hasta aquí, el usuario es administrador y podemos cargar los datos
+        // Importante: Pasamos el ID del usuario a fetchUsers para evitar el error
+        await fetchUsers(user.id);
+        
+      } catch (err) {
+        console.error("Error al verificar usuario:", err);
+        setError("Error de permisos: " + err.message);
+        setLoading(false);
+      }
+    };
+    
+    checkCurrentUser();
+  }, []);
+
+  // Cargar lista de usuarios - versión simplificada
+  // Ahora recibe el ID del usuario como parámetro para evitar problemas
+  const fetchUsers = async (currentUserId) => {
     try {
-      setLoading(true);
+      console.log("Obteniendo lista de usuarios...");
       
-      // En producción, esto debería ir a través de una función de Supabase para seguridad
-      // Aquí estamos usando la API de Supabase Auth directamente para fines de demostración
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      if (!currentUserId) {
+        console.error("Error: fetchUsers llamado sin ID de usuario");
+        throw new Error("ID de usuario no proporcionado");
+      }
       
-      if (authError) throw authError;
-      
-      // Filtrar el usuario actual (tú) de la lista
-      const currentUser = await supabase.auth.getUser();
-      const filteredUsers = authUsers.filter(user => 
-        user.email !== currentUser.data.user?.email
-      );
-      
-      // Obtener metadatos adicionales de la tabla de usuarios
-      const { data: userProfiles, error: profileError } = await supabase
+      // Obtener perfiles de usuario
+      const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('*');
         
-      if (profileError) throw profileError;
+      if (profilesError) {
+        console.error("Error al obtener perfiles:", profilesError);
+        throw profilesError;
+      }
       
-      // Combinar datos de autenticación con perfiles
-      const enhancedUsers = filteredUsers.map(user => {
-        const profile = userProfiles?.find(p => p.user_id === user.id) || {};
-        return {
-          ...user,
-          firstName: profile.first_name || '',
-          lastName: profile.last_name || '',
-          role: profile.role || 'editor',
-          isActive: profile.is_active !== false // por defecto activo si no está definido
-        };
-      });
+      console.log("Perfiles obtenidos:", profiles.length);
       
-      setUsers(enhancedUsers);
+      // Filtrar el usuario actual usando el ID pasado como parámetro
+      const filteredProfiles = profiles.filter(profile => 
+        profile.user_id !== currentUserId
+      );
+      
+      console.log("Perfiles filtrados:", filteredProfiles.length);
+      
+      // Como no podemos acceder directamente a auth.users, usamos lo que tenemos
+      setUsers(filteredProfiles);
+      
     } catch (err) {
       console.error('Error al obtener usuarios:', err);
       setError('No se pudieron cargar los usuarios. ' + err.message);
@@ -63,10 +125,6 @@ export default function UsersPage() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
 
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
@@ -77,36 +135,26 @@ export default function UsersPage() {
     });
   };
 
-  // Crear nuevo usuario
+  // Crear nuevo usuario - versión simplificada
   const handleCreateUser = async (e) => {
     e.preventDefault();
     
     try {
       setLoading(true);
+      setError(null);
       
-      // 1. Crear usuario en Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUser.email,
-        password: newUser.password,
-        email_confirm: true // Confirmar email automáticamente
-      });
+      alert(`Funcionalidad limitada: Para crear un usuario nuevo, debes usar el panel de Supabase directamente.
       
-      if (authError) throw authError;
+Email: ${newUser.email}
+Contraseña: ${newUser.password}
+Nombre: ${newUser.firstName}
+Apellido: ${newUser.lastName}
+Rol: ${newUser.role}
+Activo: ${newUser.isActive ? 'Sí' : 'No'}
+
+Después de crear el usuario en Supabase, actualiza esta página.`);
       
-      // 2. Crear perfil de usuario en la tabla personalizada
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: authData.user.id,
-          first_name: newUser.firstName,
-          last_name: newUser.lastName,
-          role: newUser.role,
-          is_active: newUser.isActive
-        });
-        
-      if (profileError) throw profileError;
-      
-      // Limpiar formulario y actualizar lista
+      // Limpiar formulario
       setNewUser({
         email: '',
         password: '',
@@ -117,9 +165,7 @@ export default function UsersPage() {
       });
       
       setIsAddingUser(false);
-      fetchUsers();
       
-      alert('Usuario creado exitosamente');
     } catch (err) {
       console.error('Error al crear usuario:', err);
       setError('Error al crear usuario: ' + err.message);
@@ -131,9 +177,13 @@ export default function UsersPage() {
   // Cambiar estado de activación
   const toggleUserActive = async (userId, currentStatus) => {
     try {
+      if (!currentUser || !currentUser.id) {
+        throw new Error('No se puede completar la acción: información de usuario no disponible');
+      }
+      
       const newStatus = !currentStatus;
       
-      // Actualizar perfil de usuario
+      // Actualizar perfil directamente
       const { error } = await supabase
         .from('user_profiles')
         .update({ is_active: newStatus })
@@ -143,28 +193,45 @@ export default function UsersPage() {
       
       // Actualizar lista local
       setUsers(users.map(user => 
-        user.id === userId ? {...user, isActive: newStatus} : user
+        user.user_id === userId ? {...user, is_active: newStatus} : user
       ));
+      
     } catch (err) {
       console.error('Error al actualizar estado del usuario:', err);
       setError('Error al actualizar estado: ' + err.message);
     }
   };
 
-  // Resetear contraseña (envía email)
-  const resetPassword = async (email) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-      
-      if (error) throw error;
-      
-      alert(`Se ha enviado un correo a ${email} para restablecer la contraseña`);
-    } catch (err) {
-      console.error('Error al enviar correo de recuperación:', err);
-      setError('Error al enviar correo: ' + err.message);
-    }
+  // Función simplificada para mostrar mensaje de reset de contraseña
+  const resetPassword = (email) => {
+    alert(`Funcionalidad limitada: Para restablecer la contraseña, debes usar el panel de Supabase directamente para el usuario con email: ${email || "desconocido"}`);
+  };
+
+  // Mostrar información de depuración
+  const showDebugInfo = () => {
+    if (!userProfile || !currentUser) return null;
+    
+    return (
+      <div className="mt-8 bg-gray-50 p-4 rounded-md border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-700 mb-2">Información de Depuración</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-500">ID Usuario:</p>
+            <p className="text-gray-800 mb-2">{currentUser.id}</p>
+            
+            <p className="text-sm font-semibold text-gray-500">Email:</p>
+            <p className="text-gray-800 mb-2">{currentUser.email}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-500">Rol:</p>
+            <p className="text-gray-800 mb-2">{userProfile.role}</p>
+            
+            <p className="text-sm font-semibold text-gray-500">Estado:</p>
+            <p className="text-gray-800 mb-2">{userProfile.is_active ? 'Activo' : 'Inactivo'}</p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -182,6 +249,11 @@ export default function UsersPage() {
       {error && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
           <p>{error}</p>
+          <div className="mt-2">
+            <a href="/admin/check-admin" className="underline">
+              Verificar permisos de administrador
+            </a>
+          </div>
         </div>
       )}
 
@@ -293,7 +365,7 @@ export default function UsersPage() {
         </div>
       )}
 
-      {loading && !isAddingUser ? (
+      {loading ? (
         <div className="text-center py-8">
           <p className="text-gray-600">Cargando usuarios...</p>
         </div>
@@ -311,9 +383,6 @@ export default function UsersPage() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Último Acceso
-                </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
@@ -322,8 +391,8 @@ export default function UsersPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No hay usuarios registrados
+                  <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                    No hay usuarios registrados o no tienes permisos para verlos
                   </td>
                 </tr>
               ) : (
@@ -333,9 +402,9 @@ export default function UsersPage() {
                       <div className="flex items-center">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
+                            {user.first_name} {user.last_name}
                           </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500">{user.email || "Email no disponible"}</div>
                         </div>
                       </div>
                     </td>
@@ -343,25 +412,25 @@ export default function UsersPage() {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.role === 'editor' 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-blue-100 text-blue-800'
+                          : user.role === 'admin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {user.role === 'editor' ? 'Editor' : 'Visualizador'}
+                        {user.role === 'editor' ? 'Editor' : 
+                         user.role === 'admin' ? 'Administrador' : 'Visualizador'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => toggleUserActive(user.id, user.isActive)}
+                        onClick={() => toggleUserActive(user.user_id, user.is_active)}
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.isActive
+                          user.is_active
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {user.isActive ? 'Activo' : 'Inactivo'}
+                        {user.is_active ? 'Activo' : 'Inactivo'}
                       </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Nunca'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
@@ -378,6 +447,25 @@ export default function UsersPage() {
           </table>
         </div>
       )}
+      
+      {/* Mostrar información de depuración */}
+      {showDebugInfo()}
+      
+      <div className="mt-8 bg-blue-50 p-4 rounded-md border border-blue-200">
+        <h3 className="text-lg font-bold text-blue-800 mb-2">Información sobre limitaciones</h3>
+        <p className="text-blue-600 mb-3">
+          Esta versión simplificada de la gestión de usuarios tiene limitaciones debido a las restricciones de seguridad de Supabase:
+        </p>
+        <ul className="list-disc list-inside text-blue-600 space-y-1">
+          <li>La creación de usuarios requiere acceso al panel de Supabase</li>
+          <li>El restablecimiento de contraseñas también debe hacerse desde el panel de Supabase</li>
+          <li>La información de email y último acceso puede no estar disponible</li>
+        </ul>
+        <p className="text-blue-600 mt-3">
+          Para funcionalidad completa, necesitarías configurar funciones Edge o serverless en Supabase 
+          con permisos administrativos adecuados.
+        </p>
+      </div>
     </div>
   );
 }
