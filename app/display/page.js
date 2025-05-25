@@ -35,12 +35,13 @@ export default function DisplayPage() {
   const [slideDirection, setSlideDirection] = useState("next");
   const [backgroundPattern, setBackgroundPattern] = useState(0);
   const [isClient, setIsClient] = useState(false);
-  const [realtimeStatus, setRealtimeStatus] = useState("connecting"); // connecting, connected, error
-  const [deviceRealtimeStatus, setDeviceRealtimeStatus] = useState("connecting"); // connecting, connected, error
-  const [realtimeNotification, setRealtimeNotification] = useState(null); // For showing update notifications
+  const [realtimeStatus, setRealtimeStatus] = useState("connecting");
+  const [deviceRealtimeStatus, setDeviceRealtimeStatus] = useState("connecting");
+  const [realtimeNotification, setRealtimeNotification] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
   const [showWeather, setShowWeather] = useState(false);
-  const [weatherLoading, setWeatherLoading] = useState(true); // Start as loading
+  const [weatherSlide, setWeatherSlide] = useState('current'); // 'current' or 'forecast'
+  const [weatherLoading, setWeatherLoading] = useState(true);
   const [reconnectCount, setReconnectCount] = useState(0);
   const [deviceChannel, setDeviceChannel] = useState(null);
   
@@ -957,71 +958,176 @@ export default function DisplayPage() {
     return () => clearInterval(interval);
   }, [allAds, filterAdsByCurrentTimeSlot, currentAdIndexIndex]);
 
-  // Rotate advertisements with enhanced animations
+  // Rotate advertisements and weather slides with enhanced animations
   useEffect(() => {
     if (filteredAds.length === 0) return;
 
-    const interval = setInterval(
-      () => {
-        if (showWeather) {
-          // Weather is showing, go back to first ad
-          setShowWeather(false);
-          setcurrentAdIndexIndex(0);
-        } else if (currentAdIndexIndex >= filteredAds.length - 1) {
-          // Last ad, show weather next
-          setShowWeather(true);
+    const FADE_DURATION = 800;
+    const SLIDE_DURATION = 7000;
+
+    let rotationTimer = null;
+    let fadeTimer = null;
+    
+    // Function to determine next state in rotation sequence
+    const advanceToNextSlide = () => {
+      // Start fade out transition
+      setFadeState("out");
+
+      // Log current state and next transition
+      const currentState = showWeather
+        ? `Weather (${weatherSlide})`
+        : `Ad ${currentAdIndexIndex + 1}/${filteredAds.length}`;
+      
+      let nextState;
+      if (!showWeather) {
+        nextState = currentAdIndexIndex >= filteredAds.length - 1 
+          ? 'Weather (current)' 
+          : `Ad ${currentAdIndexIndex + 2}/${filteredAds.length}`;
+      } else {
+        nextState = weatherSlide === 'current' 
+          ? 'Weather (forecast)' 
+          : 'Ad 1';
+      }
+      
+      console.log(`🔄 Transition: ${currentState} → ${nextState}`);
+
+      // After fade out, update state
+      fadeTimer = setTimeout(() => {
+        if (!showWeather) {
+          // Currently showing ads
+          if (currentAdIndexIndex >= filteredAds.length - 1) {
+            // Last ad - switch to weather (current)
+            setShowWeather(true);
+            setWeatherSlide('current');
+            setcurrentAdIndexIndex(0);
+          } else {
+            // Next ad
+            setSlideDirection(Math.random() > 0.5 ? "next" : "prev");
+            setBackgroundPattern(prev => (prev + 1) % 3);
+            setcurrentAdIndexIndex(prev => prev + 1);
+          }
         } else {
-          // Normal ad progression with enhanced animations
-          setSlideDirection(Math.random() > 0.5 ? "next" : "prev");
-          setBackgroundPattern((prev) => (prev + 1) % 3);
-
-          setFadeState("out");
-
-          setTimeout(() => {
-            setcurrentAdIndexIndex(currentAdIndexIndex + 1);
-            setFadeState("in");
-          }, 800);
+          // Currently showing weather
+          if (weatherSlide === 'current') {
+            // Switch to forecast
+            setWeatherSlide('forecast');
+          } else {
+            // After forecast, return to first ad
+            setShowWeather(false);
+            setWeatherSlide('current');
+            setcurrentAdIndexIndex(0);
+          }
         }
-      },
-      showWeather ? 10000 : 7000
-    ); // 10 seconds for weather, 7 for ads
 
-    return () => clearInterval(interval);
-  }, [currentAdIndexIndex, showWeather, filteredAds.length]); // Removed weatherData to fix dependency size issue
+        // Restore fade in
+        setFadeState("in");
+      }, FADE_DURATION);
+    };
 
-  const WeatherScreen = () => {
-  console.log("🌤️ WeatherScreen component rendering...", {
-    weatherData,
-    isClient,
-  });
+    // Log initial state
+    console.log('🎬 Starting rotation sequence from:', 
+      showWeather 
+        ? `Weather (${weatherSlide})` 
+        : `Ad ${currentAdIndexIndex + 1}/${filteredAds.length}`
+    );
 
-  if (!weatherData) {
-    console.log("❌ No weather data available");
+    // Start rotation sequence
+    rotationTimer = setInterval(advanceToNextSlide, SLIDE_DURATION);
+
+    // Cleanup: only clear timers
+    return () => {
+      console.log('🧹 Cleaning up rotation sequence');
+      if (rotationTimer) clearInterval(rotationTimer);
+      if (fadeTimer) clearTimeout(fadeTimer);
+    };
+  }, [showWeather, weatherSlide, currentAdIndexIndex, filteredAds.length]);
+
+// Weather components moved to line 1261
+
+  // Componente para la previsión semanal
+  const ForecastWeatherScreen = ({ weatherData, location, forecast }) => {
+    if (!weatherData) return null;
+
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-orange-900/20">
-        <div className="text-center text-white">
-          <div className="text-6xl mb-4 animate-pulse">🌤️</div>
-          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
-            Cargando el tiempo...
-          </h2>
-          <p className="text-xl text-slate-300">
-            Obteniendo datos meteorológicos de Lloret de Mar
-          </p>
+      <div className="w-full h-full flex flex-col relative overflow-hidden">
+        {/* Fondo Premium */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900/60 to-slate-900">
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-orange-500/10"></div>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="relative z-10 flex flex-col h-full text-white">
+          {/* Header Premium */}
+          <div className="flex justify-between items-center p-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
+                {location}
+              </h1>
+              <p className="text-slate-300 font-medium">Costa Brava • Previsión Semanal</p>
+            </div>
+          </div>
+
+          {/* Previsión Semanal */}
+          <div className="flex-grow flex flex-col justify-center p-8">
+            <h2 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
+              Previsión 7 Días
+            </h2>
+            
+            <div className="grid grid-cols-7 gap-4">
+              {forecast.slice(0, 7).map((day, index) => (
+                <div
+                  key={index}
+                  className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300"
+                >
+                  <p className="text-lg font-semibold mb-3 text-slate-300 text-center">
+                    {index === 0
+                      ? "Hoy"
+                      : index === 1
+                      ? "Mañana"
+                      : day.date.toLocaleDateString("es-ES", {
+                          weekday: "short",
+                        })}
+                  </p>
+                  <div className="text-5xl mb-4 filter drop-shadow-lg text-center">{day.icon}</div>
+                  <div className="text-center space-y-2">
+                    <p className="text-2xl font-bold">
+                      <span className="text-orange-300">{day.temp_max}°</span>
+                    </p>
+                    <p className="text-xl">
+                      <span className="text-blue-300">{day.temp_min}°</span>
+                    </p>
+                  </div>
+                  <p className="text-sm text-slate-400 mt-3 text-center capitalize truncate">
+                    {day.description}
+                  </p>
+                  <div className="flex justify-center space-x-3 mt-3 text-sm text-slate-400">
+                    <span className="flex items-center">
+                      <span className="text-blue-400 mr-1">💧</span>{day.humidity}%
+                    </span>
+                    <span className="flex items-center">
+                      <span className="text-cyan-400 mr-1">💨</span>{day.wind_speed}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
-  }
+  };
 
-  console.log("✅ Weather data available, rendering full screen");
-  const { current, forecast, location } = weatherData;
+  // Current Weather Screen Component
+  const CurrentWeatherScreen = ({ weatherData, location, current }) => {
+    if (!weatherData) return null;
 
-  return (
-    <div className="w-full h-full flex flex-col relative overflow-auto">
-      {/* Fondo Premium Profesional */}
-      <div className="absolute inset-0">
-        {/* Gradiente base profesional según el clima */}
-        <div
-          className={`absolute inset-0 transition-all duration-3000 ${
+    return (
+      <div className="w-full h-full flex flex-col relative overflow-hidden">
+        {/* Premium Professional Background */}
+        <div className="absolute inset-0">
+          <div className={`absolute inset-0 transition-all duration-3000 ${
             current.icon === "☀️"
               ? "bg-gradient-to-br from-slate-900 via-blue-900/80 to-orange-900/40"
               : current.icon === "⛅" || current.icon === "🌤️"
@@ -1031,173 +1137,111 @@ export default function DisplayPage() {
               : current.icon === "⛈️"
               ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-600"
               : "bg-gradient-to-br from-slate-900 via-blue-900/80 to-orange-900/40"
-          }`}
-        >
-          {/* Overlay de textura premium */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-orange-500/10"></div>
-        </div>
-
-        {/* Elementos animados profesionales */}
-        {isClient && (
-          <div className="absolute inset-0">
-            {/* Soleado - partículas doradas sutiles */}
-            {current.icon === "☀️" &&
-              [...Array(15)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-1 h-1 bg-orange-300/40 rounded-full animate-pulse"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    animationDelay: `${Math.random() * 4}s`,
-                    animationDuration: `${3 + Math.random() * 2}s`,
-                  }}
-                />
-              ))}
-
-            {/* Nublado - elementos geométricos sutiles */}
-            {(current.icon === "⛅" ||
-              current.icon === "☁️" ||
-              current.icon === "🌤️") &&
-              [...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute opacity-10"
-                  style={{
-                    left: `${Math.random() * 90}%`,
-                    top: `${Math.random() * 80}%`,
-                    width: `${60 + i * 20}px`,
-                    height: `${30 + i * 10}px`,
-                    background: "linear-gradient(45deg, rgba(148, 163, 184, 0.3), rgba(203, 213, 225, 0.2))",
-                    borderRadius: "50px",
-                    animationDelay: `${Math.random() * 3}s`,
-                    animationDuration: `${4 + Math.random()}s`,
-                  }}
-                  
-                />
-              ))}
-
-            {/* Lluvia - líneas elegantes */}
-            {(current.icon === "🌧️" || current.icon === "🌦️") &&
-              [...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-px h-6 bg-gradient-to-b from-blue-300/30 to-transparent"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    animation: `fall ${2 + Math.random()}s linear infinite`,
-                    animationDelay: `${Math.random() * 2}s`,
-                  }}
-                />
-              ))}
-          </div>
-        )}
-      </div>
-
-      {/* Contenido del Tiempo */}
-      <div className="relative z-10 flex flex-col h-full text-white">
-        {/* Header Premium */}
-        <div className="flex justify-between items-center p-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
-              {location}
-            </h1>
-            <p className="text-slate-300 font-medium">Costa Brava • Tiempo en Vivo</p>
-          </div>
-          <div className="text-right">
-            <p className="text-slate-400 text-sm font-medium">Actualizado</p>
-            <p className="text-lg font-bold text-orange-300">
-              {current.lastUpdated?.toLocaleTimeString("es-ES", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
+          }`}>
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-orange-500/10"></div>
           </div>
         </div>
 
-        {/* Display Principal del Tiempo */}
-        <div className="flex-grow flex overflow-hidden py-6">
-          {/* Temperatura Actual - Lado Izquierdo */}
-          <div className="flex-1 flex flex-col justify-center items-center p-6">
-            <div className="text-center">
-              <div className="text-7xl mb-4 filter drop-shadow-2xl">
-                {current.icon}
-              </div>
-              <div className="text-8xl font-light mb-3 bg-gradient-to-b from-white to-orange-200 bg-clip-text text-transparent filter drop-shadow-lg">
-                {current.temp}°
-              </div>
-              <div className="text-2xl font-medium mb-4 capitalize text-slate-200">
-                {current.description}
-              </div>
-              <div className="text-lg text-slate-300 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-                Sensación térmica: <span className="font-semibold text-orange-300">{current.feels_like}°</span>
-              </div>
+        {/* Content */}
+        <div className="relative z-10 flex flex-col h-full text-white">
+          {/* Premium Header */}
+          <div className="flex justify-between items-center p-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
+                {location}
+              </h1>
+              <p className="text-slate-300 font-medium">Costa Brava • Tiempo Actual</p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-400 text-sm font-medium">Actualizado</p>
+              <p className="text-lg font-bold text-orange-300">
+                {current.lastUpdated?.toLocaleTimeString("es-ES", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
             </div>
           </div>
 
-          {/* Detalles del Tiempo - Lado Derecho */}
-          <div className="flex-1 p-6">
-            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
-              Condiciones Actuales
-            </h2>
-            
-            <div className="grid grid-cols-2 gap-4 text-base">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+          {/* Main Weather Display */}
+          <div className="flex-grow grid grid-cols-2 gap-8 p-8">
+            {/* Current Temperature - Left Side */}
+            <div className="flex flex-col justify-center items-center">
+              <div className="text-center">
+                <div className="text-9xl mb-8 filter drop-shadow-2xl">
+                  {current.icon}
+                </div>
+                <div className="text-9xl font-light mb-6 bg-gradient-to-b from-white to-orange-200 bg-clip-text text-transparent filter drop-shadow-lg">
+                  {current.temp}°
+                </div>
+                <div className="text-3xl font-medium mb-4 capitalize text-slate-200">
+                  {current.description}
+                </div>
+                <div className="text-xl text-slate-300 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
+                  Sensación térmica: <span className="font-semibold text-orange-300">{current.feels_like}°</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Weather Details - Right Side */}
+            <div className="grid grid-cols-2 gap-6 content-center">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-white/15 transition-all duration-300">
                 <div className="flex items-center space-x-4">
-                  <span className="text-3xl filter drop-shadow-lg">💧</span>
+                  <span className="text-4xl filter drop-shadow-lg">💧</span>
                   <div>
                     <p className="text-slate-300 font-medium">Humedad</p>
-                    <p className="text-2xl font-bold text-blue-300">{current.humidity}%</p>
+                    <p className="text-3xl font-bold text-blue-300">{current.humidity}%</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-white/15 transition-all duration-300">
                 <div className="flex items-center space-x-4">
-                  <span className="text-3xl filter drop-shadow-lg">💨</span>
+                  <span className="text-4xl filter drop-shadow-lg">💨</span>
                   <div>
                     <p className="text-slate-300 font-medium">Viento</p>
-                    <p className="text-2xl font-bold text-cyan-300">
+                    <p className="text-3xl font-bold text-cyan-300">
                       {current.wind_speed} km/h
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-white/15 transition-all duration-300">
                 <div className="flex items-center space-x-4">
-                  <span className="text-3xl filter drop-shadow-lg">🔍</span>
+                  <span className="text-4xl filter drop-shadow-lg">🔍</span>
                   <div>
                     <p className="text-slate-300 font-medium">Visibilidad</p>
-                    <p className="text-2xl font-bold text-green-300">
+                    <p className="text-3xl font-bold text-green-300">
                       {current.visibility} km
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:bg-white/15 transition-all duration-300">
                 <div className="flex items-center space-x-4">
-                  <span className="text-3xl filter drop-shadow-lg">📊</span>
+                  <span className="text-4xl filter drop-shadow-lg">📊</span>
                   <div>
                     <p className="text-slate-300 font-medium">Presión</p>
-                    <p className="text-2xl font-bold text-purple-300">
+                    <p className="text-3xl font-bold text-purple-300">
                       {current.pressure} mb
                     </p>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Amanecer/Atardecer Premium */}
-            <div className="mt-6 bg-gradient-to-r from-orange-900/30 to-blue-900/30 backdrop-blur-md rounded-2xl p-4 border border-orange-500/20">
+          {/* Sunrise/Sunset Display */}
+          <div className="px-8 pb-8">
+            <div className="bg-gradient-to-r from-orange-900/30 to-blue-900/30 backdrop-blur-md rounded-2xl p-6 border border-orange-500/20">
               <div className="flex justify-between">
                 <div className="flex items-center space-x-4">
-                  <span className="text-3xl filter drop-shadow-lg">🌅</span>
+                  <span className="text-4xl filter drop-shadow-lg">🌅</span>
                   <div>
                     <p className="text-slate-300 font-medium">Amanecer</p>
-                    <p className="text-xl font-bold text-orange-300">
+                    <p className="text-2xl font-bold text-orange-300">
                       {current.sunrise?.toLocaleTimeString("es-ES", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -1206,10 +1250,10 @@ export default function DisplayPage() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <span className="text-3xl filter drop-shadow-lg">🌇</span>
+                  <span className="text-4xl filter drop-shadow-lg">🌇</span>
                   <div>
                     <p className="text-slate-300 font-medium">Atardecer</p>
-                    <p className="text-xl font-bold text-orange-400">
+                    <p className="text-2xl font-bold text-orange-400">
                       {current.sunset?.toLocaleTimeString("es-ES", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -1221,79 +1265,47 @@ export default function DisplayPage() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {/* Previsión de 7 Días Premium */}
-        <div className="bg-black/40 backdrop-blur-xl py-4 px-6 border-t border-white/10">
-          <h2 className="text-2xl font-bold mb-4 text-center bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
-            Previsión Semanal
-          </h2>
-          <div className="flex justify-between space-x-2 overflow-x-auto pb-2">
-            {forecast.slice(0, 7).map((day, index) => (
-              <div
-                key={index}
-                className="flex-1 min-w-[100px] text-center bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 hover:bg-white/15 transition-all duration-300"
-              >
-                <p className="text-sm font-semibold mb-2 text-slate-300">
-                  {index === 0
-                    ? "Hoy"
-                    : index === 1
-                    ? "Mañana"
-                    : day.date.toLocaleDateString("es-ES", {
-                        weekday: "short",
-                      })}
-                </p>
-                <div className="text-3xl mb-2 filter drop-shadow-lg">{day.icon}</div>
-                <div className="text-lg font-bold text-white">
-                  <span className="text-orange-300">{day.temp_max}°</span> / <span className="text-blue-300">{day.temp_min}°</span>
-                </div>
-                <p className="text-xs text-slate-400 mt-2 capitalize truncate">
-                  {day.description}
-                </p>
-                <div className="flex justify-center space-x-2 mt-2 text-xs text-slate-400">
-                  <span className="flex items-center">
-                    <span className="text-blue-400">💧</span>{day.humidity}%
-                  </span>
-                  <span className="flex items-center">
-                    <span className="text-cyan-400">💨</span>{day.wind_speed}
-                  </span>
-                </div>
-              </div>
-            ))}
+  // Weather Screen Component
+  const WeatherScreen = () => {
+    console.log("🌤️ WeatherScreen component rendering...", {
+      weatherData,
+      isClient,
+      weatherSlide
+    });
+
+    if (!weatherData) {
+      console.log("❌ No weather data available");
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-orange-900/20">
+          <div className="text-center text-white">
+            <div className="text-6xl mb-4 animate-pulse">🌤️</div>
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
+              Cargando el tiempo...
+            </h2>
+            <p className="text-xl text-slate-300">
+              Obteniendo datos meteorológicos de Lloret de Mar
+            </p>
           </div>
         </div>
-      </div>
+      );
+    }
+  
+    console.log("✅ Weather data available, rendering", weatherSlide, "screen");
+    const { current, forecast, location } = weatherData;
 
-      {/* Animaciones CSS personalizadas */}
-      <style jsx>{`
-        @keyframes fall {
-          0% {
-            transform: translateY(-100vh) rotate(10deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(100vh) rotate(10deg);
-            opacity: 0;
-          }
-        }
-        
-        .hide-scrollbar {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-        }
-        
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-    </div>
-  );
-};
+    // Render the appropriate screen based on weatherSlide state
+    return weatherSlide === 'current' ? (
+      <CurrentWeatherScreen weatherData={weatherData} location={location} current={current} />
+    ) : (
+      <ForecastWeatherScreen weatherData={weatherData} location={location} forecast={forecast} />
+    );
+  };
+
+// Remove duplicate WeatherScreen component and any other trailing code
 
   const LoadingScreen = () => (
     <div className="flex flex-col h-screen bg-black relative overflow-hidden">

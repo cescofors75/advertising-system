@@ -33,6 +33,7 @@ export default function DeviceMonitoringDashboard() {
   // Referencias para canales
   const reconnectTimeoutRef = useRef(null);
   const channelsRef = useRef({ devices: null, adViews: null });
+  const presenceChannel = useRef(null);
   
 
 // Función para actualizar dispositivos offline
@@ -191,13 +192,23 @@ function isDeviceOnline(lastSeenDate) {
     };
   }, [loadData]);
   
-  // Configurar suscripciones de realtime como método principal de actualización
+  // Configurar suscripciones de realtime y presence como método principal
   useEffect(() => {
     let isMounted = true;
     
     const cleanupChannels = async () => {
       console.log('🧹 Cleaning up channels...');
       
+      if (presenceChannel.current) {
+        // Marcar admin como offline antes de desconectar
+        await presenceChannel.current.track({
+          online_at: new Date().toISOString(),
+          status: 'offline'
+        });
+        await supabase.removeChannel(presenceChannel.current);
+        presenceChannel.current = null;
+      }
+
       if (channelsRef.current.devices) {
         await supabase.removeChannel(channelsRef.current.devices);
         channelsRef.current.devices = null;
@@ -218,16 +229,130 @@ function isDeviceOnline(lastSeenDate) {
         
         // Limpiar canales existentes
         await cleanupChannels();
-        
-        // Canal para dispositivos con manejo mejorado de eventos
-        const devicesChannel = supabase
-          .channel(`devices-${Date.now()}`, {
-            config: {
-              presence: {
-                key: 'admin-dashboard',
-              },
+
+        // Crear canal de presence para todos los dispositivos
+        const devicePresence = supabase.channel('device_presence', {
+          config: {
+            presence: {
+              key: 'admin-dashboard'
             }
+          }
+        });
+
+        // Configurar eventos de presence
+        devicePresence
+          .on('presence', { event: 'sync' }, () => {
+            if (!isMounted) return;
+            
+            console.log('👥 Device presence synchronized');
+            const state = devicePresence.presenceState();
+            console.log('Current presence state:', state);
+            
+            // Actualizar estado de los dispositivos basado en presence
+            const onlineDevices = new Set();
+            Object.entries(state).forEach(([_, presences]) => {
+              presences.forEach(presence => {
+                if (presence.device_id && presence.status === 'online') {
+                  onlineDevices.add(presence.device_id);
+                }
+              });
+            });
+            
+            // Actualizar lista de dispositivos
+            setDevices(prevDevices => 
+              prevDevices.map(device => ({
+                ...device,
+                status: onlineDevices.has(device.id) ? 'online' : 'offline',
+                last_seen: onlineDevices.has(device.id) ? new Date().toISOString() : device.last_seen
+              }))
+            );
+            
+            // Actualizar estadísticas
+            setStats(prev => ({
+              ...prev,
+              onlineDevices: onlineDevices.size
+            }));
           })
+          .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+            if (!isMounted) return;
+            console.log('👋 Device joined:', key, newPresences);
+            
+            newPresences.forEach(async presence => {
+              if (presence.device_id) {
+                // Obtener datos actualizados del dispositivo
+                const { data: deviceData } = await supabase
+                  .from('connected_devices')
+                  .select('*')
+                  .eq('id', presence.device_id)
+                  .single();
+                
+                if (deviceData) {
+                  setDevices(prevDevices => {
+                    const existingDeviceIndex = prevDevices.findIndex(d => d.id === presence.device_id);
+                    if (existingDeviceIndex >= 0) {
+                      const updatedDevices = [...prevDevices];
+                      updatedDevices[existingDeviceIndex] = {
+                        ...deviceData,
+                        status: 'online',
+                        last_seen: presence.online_at
+                      };
+                      return updatedDevices;
+                    } else {
+                      return [...prevDevices, {
+                        ...deviceData,
+                        status: 'online',
+                        last_seen: presence.online_at
+                      }];
+                    }
+                  });
+                }
+              }
+            });
+          })
+          .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+            if (!isMounted) return;
+            console.log('👋 Device left:', key, leftPresences);
+            
+            leftPresences.forEach(presence => {
+              if (presence.device_id) {
+                setDevices(prevDevices =>
+                  prevDevices.map(device =>
+                    device.id === presence.device_id
+                      ? { ...device, status: 'offline', last_seen: new Date().toISOString() }
+                      : device
+                  )
+                );
+              }
+            });
+          });
+
+        // Suscribirse al canal de presence
+        const status = await devicePresence.subscribe(async (status) => {
+          if (!isMounted) return;
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Presence channel subscribed');
+            setRealtimeStatus('connected');
+            setReconnectCount(0);
+            
+            // Registrar presencia del admin
+            await devicePresence.track({
+              online_at: new Date().toISOString(),
+              status: 'online',
+              type: 'admin'
+            });
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Presence channel error');
+            setRealtimeStatus('error');
+            scheduleReconnect();
+          }
+        });
+
+        presenceChannel.current = devicePresence;
+
+        // Canal para cambios en la base de datos
+        const devicesChannel = supabase
+          .channel(`devices-${Date.now()}`)
           .on('presence', { event: 'sync' }, () => {
             console.log('👥 Presence state synchronized');
           })
