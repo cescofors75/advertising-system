@@ -36,10 +36,13 @@ export default function DisplayPage() {
   const [backgroundPattern, setBackgroundPattern] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState("connecting"); // connecting, connected, error
+  const [deviceRealtimeStatus, setDeviceRealtimeStatus] = useState("connecting"); // connecting, connected, error
   const [realtimeNotification, setRealtimeNotification] = useState(null); // For showing update notifications
   const [weatherData, setWeatherData] = useState(null);
   const [showWeather, setShowWeather] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(true); // Start as loading
+  const [reconnectCount, setReconnectCount] = useState(0);
+  const [deviceChannel, setDeviceChannel] = useState(null);
   
 
   // Time slot definitions with translations
@@ -51,7 +54,12 @@ export default function DisplayPage() {
   // Add this useEffect hook to collect and send device data
   useEffect(() => {
     let deviceId = "";
-
+    let presenceChannel = null;
+    let heartbeatInterval = null;
+    let reconnectTimeout = null;
+    const RECONNECT_MAX_ATTEMPTS = 10;
+    
+    // Function to get device information and send it
     const collectAndSendDeviceData = async () => {
       // Generate a unique device ID if none exists
       let deviceIdentifier = localStorage.getItem("device_id");
@@ -64,6 +72,7 @@ export default function DisplayPage() {
         localStorage.setItem("device_id", deviceIdentifier);
       }
       deviceId = deviceIdentifier;
+      setDeviceId(deviceIdentifier);
 
       // Get current ad details from your existing state
       const currentAd =
@@ -143,6 +152,124 @@ export default function DisplayPage() {
         console.error("❌ Error updating device info:", error);
       }
     };
+    
+    // Function to setup realtime presence channel for device
+    const setupDevicePresenceChannel = async () => {
+      try {
+        console.log(`🔌 Setting up device presence channel (attempt ${reconnectCount + 1})...`);
+        setDeviceRealtimeStatus("connecting");
+        
+        // Make sure we have a device ID first
+        await collectAndSendDeviceData();
+        
+        if (!deviceId) {
+          console.error("Cannot set up presence channel without device ID");
+          return;
+        }
+        
+        // Clean up existing channel if any
+        if (presenceChannel) {
+          await supabase.removeChannel(presenceChannel);
+        }
+        
+        // Create a new channel with presence enabled
+        const channel = supabase.channel(`device-presence-${deviceId}`, {
+          config: {
+            presence: {
+              key: deviceId,
+            },
+          },
+        });
+        
+        // Set up presence handlers
+        channel
+          .on('presence', { event: 'sync' }, () => {
+            console.log('👥 Presence state synchronized');
+            setDeviceRealtimeStatus("connected");
+            setReconnectCount(0);
+          })
+          .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+            console.log(`👋 Device ${key} joined with state:`, newPresences);
+          })
+          .on('presence', { event: 'leave' }, ({ key }) => {
+            console.log(`👋 Device ${key} left`);
+          });
+          
+        // Subscribe to the channel
+        const status = await channel.subscribe(async (status) => {
+          console.log(`📡 Device presence channel status: ${status}`);
+          
+          if (status === "SUBSCRIBED") {
+            // Start tracking presence
+            const presenceTrackStatus = await channel.track({
+              device_id: deviceId,
+              online_at: new Date().toISOString(),
+              status: "online",
+            });
+            
+            if (presenceTrackStatus === 'ok') {
+              console.log('✅ Device presence tracking started');
+              setDeviceRealtimeStatus("connected");
+              
+              // Set up heartbeat to keep presence active
+              if (heartbeatInterval) clearInterval(heartbeatInterval);
+              
+              heartbeatInterval = setInterval(async () => {
+                if (document.visibilityState === "visible") {
+                  const trackStatus = await channel.track({
+                    device_id: deviceId,
+                    online_at: new Date().toISOString(),
+                    status: "online",
+                  });
+                  
+                  if (trackStatus !== 'ok') {
+                    console.warn('⚠️ Failed to update presence. Reconnecting...');
+                    scheduleReconnect();
+                  }
+                }
+              }, 30000); // Send heartbeat every 30 seconds
+            } else {
+              console.error('❌ Failed to start presence tracking:', presenceTrackStatus);
+              setDeviceRealtimeStatus("error");
+              scheduleReconnect();
+            }
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            console.error('❌ Channel error:', status);
+            setDeviceRealtimeStatus("error");
+            scheduleReconnect();
+          }
+        });
+        
+        setDeviceChannel(channel);
+        presenceChannel = channel;
+        
+      } catch (error) {
+        console.error('❌ Error setting up device presence channel:', error);
+        setDeviceRealtimeStatus("error");
+        scheduleReconnect();
+      }
+    };
+    
+    // Schedule reconnection with exponential backoff
+    const scheduleReconnect = () => {
+      if (reconnectCount >= RECONNECT_MAX_ATTEMPTS) {
+        console.log(`🚫 Max reconnection attempts (${RECONNECT_MAX_ATTEMPTS}) reached`);
+        setDeviceRealtimeStatus("error");
+        return;
+      }
+      
+      const delay = Math.min(1000 * Math.pow(1.5, reconnectCount), 30000);
+      console.log(`⏱️ Scheduling reconnect in ${delay/1000}s (attempt ${reconnectCount + 1}/${RECONNECT_MAX_ATTEMPTS})...`);
+      
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      
+      reconnectTimeout = setTimeout(() => {
+        setReconnectCount(prev => prev + 1);
+        setupDevicePresenceChannel();
+      }, delay);
+    };
 
     // Helper functions to get device information
     const getOperatingSystem = () => {
@@ -199,20 +326,32 @@ export default function DisplayPage() {
       return null;
     };
 
-    // Initial data collection
-    collectAndSendDeviceData();
+    // Initial setup for device presence channel
+    setupDevicePresenceChannel();
 
-    // Set up interval to update device info every minute
-    const intervalId = setInterval(collectAndSendDeviceData, 60000);
-
-    // Set up visibility change detection to update status
+    // Set up improved visibility change detection to update status
     const handleVisibilityChange = async () => {
       // Get stored device ID
       const storedDeviceId = localStorage.getItem("device_id");
-      if (!storedDeviceId) return;
+      if (!storedDeviceId || !presenceChannel) return;
 
       if (document.visibilityState === "visible") {
-        // Page is visible again, update status to online
+        // Page is visible again
+        console.log("📱 Page now visible, updating device status to online");
+        
+        // Update presence state
+        const trackStatus = await presenceChannel.track({
+          device_id: storedDeviceId,
+          online_at: new Date().toISOString(),
+          status: "online",
+        });
+        
+        if (trackStatus !== 'ok') {
+          console.warn("⚠️ Failed to update presence on visibility change. Reconnecting...");
+          scheduleReconnect();
+        }
+        
+        // Also update database directly
         try {
           const { error } = await supabase
             .from("connected_devices")
@@ -224,11 +363,24 @@ export default function DisplayPage() {
           console.error("Error updating device status:", error);
         }
       } else {
-        // Page is hidden, update status to offline
+        // Page is hidden
+        console.log("📱 Page now hidden, updating presence");
+        
+        // Update presence with offline status
+        await presenceChannel.track({
+          device_id: storedDeviceId,
+          online_at: new Date().toISOString(),
+          status: "inactive", // We use "inactive" instead of "offline" to indicate the tab is hidden but not closed
+        });
+        
+        // Also update database
         try {
           const { error } = await supabase
             .from("connected_devices")
-            .update({ status: "offline", last_seen: new Date().toISOString() })
+            .update({ 
+              status: "online", // Keep it online in DB but with an updated timestamp
+              last_seen: new Date().toISOString() 
+            })
             .eq("id", storedDeviceId);
 
           if (error) throw error;
@@ -238,12 +390,47 @@ export default function DisplayPage() {
       }
     };
 
+    // Set up network status event listeners
+    const handleOnlineStatus = () => {
+      if (navigator.onLine) {
+        console.log("🌐 Browser back online, reconnecting device presence channel...");
+        if (deviceRealtimeStatus !== "connected") {
+          setReconnectCount(0); // Reset counter to force immediate reconnection
+          setupDevicePresenceChannel();
+        }
+      } else {
+        console.log("🌐 Browser offline, waiting for connection...");
+        setDeviceRealtimeStatus("error");
+      }
+    };
+
+    // Add event listeners
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnlineStatus);
+    window.addEventListener("offline", handleOnlineStatus);
 
     // Cleanup on component unmount
     return () => {
-      clearInterval(intervalId);
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnlineStatus);
+      window.removeEventListener("offline", handleOnlineStatus);
+
+      // Clean up presence channel
+      if (presenceChannel) {
+        // Update status to offline
+        presenceChannel.track({
+          device_id: deviceId,
+          online_at: new Date().toISOString(),
+          status: "offline",
+        }).then(() => {
+          console.log("✅ Device marked as offline in presence channel");
+        });
+        
+        // Remove channel
+        supabase.removeChannel(presenceChannel);
+      }
 
       // Get stored device ID
       const storedDeviceId = localStorage.getItem("device_id");

@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import supabase from '@/lib/supabaseClient';
 
 import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw, 
-  Search, Server, AlertCircle, Smartphone, Laptop, Battery, Zap, Activity, Eye } from 'lucide-react';
+  Search, Server, AlertCircle, Smartphone, Laptop, Battery, Zap, Activity, Eye,
+  CheckCircle, XCircle, Info, ArrowUpDown, Filter } from 'lucide-react';
 
 // Constants
 const OFFLINE_THRESHOLD_MINUTES = 5;
-const UPDATE_INTERVAL_SECONDS = 10;
+const RECONNECT_MAX_ATTEMPTS = 10; // Maximum number of reconnection attempts
 
 export default function DeviceMonitoringDashboard() {
   const [devices, setDevices] = useState([]);
@@ -28,11 +29,8 @@ export default function DeviceMonitoringDashboard() {
   });
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [reconnectCount, setReconnectCount] = useState(0);
-  const [nextPollTime, setNextPollTime] = useState(UPDATE_INTERVAL_SECONDS);
   
-  // Referencias para intervalos y canales
-  const pollIntervalRef = useRef(null);
-  const pollTimerRef = useRef(null);
+  // Referencias para canales
   const reconnectTimeoutRef = useRef(null);
   const channelsRef = useRef({ devices: null, adViews: null });
   
@@ -181,39 +179,19 @@ function isDeviceOnline(lastSeenDate) {
     }
   }, []);
   
-  // Configurar polling como método principal
+  // Cargar datos iniciales
   useEffect(() => {
     console.log('🚀 Initializing dashboard...');
     
     // Cargar datos inicialmente
     loadData();
     
-    // Configurar contador de tiempo para siguiente actualización
-    const updateNextPollTime = () => {
-      setNextPollTime(prev => {
-        if (prev <= 0) return UPDATE_INTERVAL_SECONDS;
-        return prev - 1;
-      });
-    };
-    
-    // Timer para mostrar cuenta regresiva
-    pollTimerRef.current = setInterval(updateNextPollTime, 1000);
-    
-    // Polling cada UPDATE_INTERVAL_SECONDS segundos
-    pollIntervalRef.current = setInterval(() => {
-      console.log('⏰ Polling update...');
-      loadData(false);
-      setNextPollTime(UPDATE_INTERVAL_SECONDS);
-    }, UPDATE_INTERVAL_SECONDS * 1000);
-    
     return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     };
   }, [loadData]);
   
-  // Configurar suscripciones de realtime (opcional, con mejor manejo de errores)
+  // Configurar suscripciones de realtime como método principal de actualización
   useEffect(() => {
     let isMounted = true;
     
@@ -241,9 +219,21 @@ function isDeviceOnline(lastSeenDate) {
         // Limpiar canales existentes
         await cleanupChannels();
         
-        // Canal para dispositivos
+        // Canal para dispositivos con manejo mejorado de eventos
         const devicesChannel = supabase
-          .channel(`devices-${Date.now()}`)
+          .channel(`devices-${Date.now()}`, {
+            config: {
+              presence: {
+                key: 'admin-dashboard',
+              },
+            }
+          })
+          .on('presence', { event: 'sync' }, () => {
+            console.log('👥 Presence state synchronized');
+          })
+          .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+            console.log('👋 New presences:', newPresences);
+          })
           .on('postgres_changes', 
             {
               event: '*',
@@ -253,7 +243,7 @@ function isDeviceOnline(lastSeenDate) {
             (payload) => {
               if (!isMounted) return;
               
-              console.log('📡 Device update received:', payload?.eventType || 'unknown');
+              console.log('📡 Device update received:', payload?.eventType || 'unknown', payload?.new?.id || 'unknown-id');
               
               // Validar que payload existe y tiene las propiedades necesarias
               if (!payload || !payload.eventType) {
@@ -282,14 +272,58 @@ function isDeviceOnline(lastSeenDate) {
                   }, 3000);
                 }
                 
-                // Recargar datos
-                loadData(false);
+                // Actualizar datos en el estado según el tipo de evento
+                if (payload.eventType === 'INSERT') {
+                  // Añadir nuevo dispositivo al estado
+                  setDevices(prevDevices => [payload.new, ...prevDevices]);
+                  // Actualizar estadísticas
+                  setStats(prev => ({
+                    ...prev,
+                    totalDevices: prev.totalDevices + 1,
+                    onlineDevices: payload.new.status === 'online' ? prev.onlineDevices + 1 : prev.onlineDevices
+                  }));
+                } else if (payload.eventType === 'UPDATE') {
+                  // Actualizar dispositivo existente
+                  setDevices(prevDevices => 
+                    prevDevices.map(device => 
+                      device.id === payload.new.id ? {...device, ...payload.new} : device
+                    )
+                  );
+                  // Si el estado cambió, actualizar contadores
+                  if (payload.old.status !== payload.new.status) {
+                    setStats(prev => ({
+                      ...prev,
+                      onlineDevices: 
+                        payload.new.status === 'online' 
+                          ? prev.onlineDevices + 1 
+                          : Math.max(0, prev.onlineDevices - 1)
+                    }));
+                  }
+                } else if (payload.eventType === 'DELETE') {
+                  // Eliminar dispositivo del estado
+                  setDevices(prevDevices => 
+                    prevDevices.filter(device => device.id !== payload.old.id)
+                  );
+                  // Actualizar estadísticas
+                  setStats(prev => ({
+                    ...prev,
+                    totalDevices: Math.max(0, prev.totalDevices - 1),
+                    onlineDevices: payload.old.status === 'online' 
+                      ? Math.max(0, prev.onlineDevices - 1) 
+                      : prev.onlineDevices
+                  }));
+                }
+                
+                // Actualizar timestamp de última actualización
+                setLastUpdate(new Date());
               } catch (err) {
                 console.error('Error processing realtime update:', err);
+                // Si hay un error procesando los datos, mejor recargar todo
+                loadData(false);
               }
             }
           )
-          .subscribe((status) => {
+          .subscribe(async (status) => {
             if (!isMounted) return;
             
             console.log('📡 Devices channel status:', status);
@@ -298,7 +332,19 @@ function isDeviceOnline(lastSeenDate) {
               setRealtimeStatus('connected');
               setReconnectCount(0);
               console.log('✅ Connected to devices channel');
-            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+              
+              // Actualizar estado de presencia
+              const presenceTrackStatus = await devicesChannel.track({
+                user: 'admin',
+                online_at: new Date().toISOString(),
+              });
+              
+              if (presenceTrackStatus === 'ok') {
+                console.log('✅ Presence tracking started');
+              } else {
+                console.warn('⚠️ Presence tracking failed:', presenceTrackStatus);
+              }
+            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
               console.error('❌ Devices channel error:', status);
               setRealtimeStatus('error');
               scheduleReconnect();
@@ -319,7 +365,12 @@ function isDeviceOnline(lastSeenDate) {
             (payload) => {
               if (!isMounted) return;
               console.log('📡 Ad view recorded');
-              loadData(false);
+              
+              // Incrementar contador de visualizaciones
+              setStats(prev => ({
+                ...prev,
+                totalAdViews: prev.totalAdViews + 1
+              }));
             }
           )
           .subscribe((status) => {
@@ -328,6 +379,13 @@ function isDeviceOnline(lastSeenDate) {
             
             if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
               console.error('❌ Ad views channel error:', status);
+              // Reconectar solo este canal específico
+              setTimeout(() => {
+                if (isMounted && channelsRef.current.adViews) {
+                  console.log('🔄 Reconnecting ad views channel...');
+                  channelsRef.current.adViews.subscribe();
+                }
+              }, 5000);
             }
           });
           
@@ -341,16 +399,16 @@ function isDeviceOnline(lastSeenDate) {
       }
     };
     
-    // Programar reconexión con backoff exponencial
+    // Programar reconexión con backoff exponencial mejorado
     const scheduleReconnect = () => {
-      if (!isMounted || reconnectCount >= 5) {
-        console.log('🚫 Max reconnection attempts reached or component unmounted');
+      if (!isMounted || reconnectCount >= RECONNECT_MAX_ATTEMPTS) {
+        console.log(`🚫 Max reconnection attempts (${RECONNECT_MAX_ATTEMPTS}) reached or component unmounted`);
         setRealtimeStatus('disabled');
         return;
       }
       
-      const delay = Math.min(2000 * Math.pow(1.5, reconnectCount), 30000);
-      console.log(`⏱️ Scheduling reconnect in ${delay/1000}s...`);
+      const delay = Math.min(1000 * Math.pow(1.5, reconnectCount), 30000);
+      console.log(`⏱️ Scheduling reconnect in ${delay/1000}s (attempt ${reconnectCount + 1}/${RECONNECT_MAX_ATTEMPTS})...`);
       
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -364,6 +422,24 @@ function isDeviceOnline(lastSeenDate) {
       }, delay);
     };
     
+    // Manejador de eventos de conexión a internet
+    const handleOnlineStatus = () => {
+      if (navigator.onLine) {
+        console.log('🌐 Browser back online, reconnecting...');
+        if (realtimeStatus !== 'connected') {
+          setReconnectCount(0); // Reiniciar contador para forzar reconexión inmediata
+          setupRealtimeChannels();
+        }
+      } else {
+        console.log('🌐 Browser offline, waiting for connection...');
+        setRealtimeStatus('error');
+      }
+    };
+    
+    // Añadir event listeners para detectar cambios en la conexión
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    
     // Iniciar conexión realtime
     setupRealtimeChannels();
     
@@ -374,20 +450,17 @@ function isDeviceOnline(lastSeenDate) {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
     };
   }, [reconnectCount, loadData]);
   
-  // Actualización manual
-  const handleManualRefresh = async () => {
-    setRealtimeNotification({ type: 'update', message: 'Actualizando datos...' });
-    const success = await loadData(true);
+  // Reconexión manual de realtime
+  const handleReconnect = () => {
+    setRealtimeNotification({ type: 'update', message: 'Reconectando tiempo real...' });
     
-    if (success) {
-      setRealtimeNotification({ type: 'update', message: '✅ Datos actualizados' });
-      setNextPollTime(UPDATE_INTERVAL_SECONDS);
-    } else {
-      setRealtimeNotification({ type: 'delete', message: '❌ Error al actualizar' });
-    }
+    // Reiniciar contador para forzar reconexión inmediata
+    setReconnectCount(0);
     
     setTimeout(() => setRealtimeNotification(null), 3000);
   };
@@ -464,102 +537,6 @@ function isDeviceOnline(lastSeenDate) {
 
 
   
-  // Constantes compartidas
-
-  
-  // Función para actualizar dispositivos offline
-  async function updateOfflineDevices() {
-    const thresholdTime = new Date(Date.now() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000).toISOString();
-    
-    try {
-      const { error } = await supabase
-        .from('connected_devices')
-        .update({ status: 'offline' })
-        .eq('status', 'online')
-        .lt('last_seen', thresholdTime);
-        
-      if (error) {
-        console.error('Error updating offline devices:', error);
-        return false;
-      }
-      
-      return true;
-    } catch (err) {
-      console.error('Error in updateOfflineDevices:', err);
-      return false;
-    }
-  }
-  
-  // Función para obtener el conteo de dispositivos online
-  async function getOnlineDevicesCount() {
-    try {
-      // Primero actualizar dispositivos offline
-      await updateOfflineDevices();
-      
-      // Luego contar dispositivos online
-      const { count, error } = await supabase
-        .from('connected_devices')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'online');
-        
-      if (error) {
-        console.error('Error counting online devices:', error);
-        return 0;
-      }
-      
-      return count || 0;
-    } catch (err) {
-      console.error('Error in getOnlineDevicesCount:', err);
-      return 0;
-    }
-  }
-  
-  // Función para obtener todos los dispositivos
-  async function getAllDevices() {
-    try {
-      // Primero actualizar dispositivos offline
-      await updateOfflineDevices();
-      
-      // Obtener todos los dispositivos
-      const { data, error } = await supabase
-        .from('connected_devices')
-        .select('*')
-        .order('last_seen', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching devices:', error);
-        return [];
-      }
-      
-      return data || [];
-    } catch (err) {
-      console.error('Error in getAllDevices:', err);
-      return [];
-    }
-  }
-  
-  // Función para obtener estadísticas
-  function calculateDeviceStats(devices) {
-    const onlineDevices = devices.filter(d => d.status === 'online').length;
-    const uniqueLocations = new Set(devices.filter(d => d.location).map(d => d.location)).size;
-    
-    return {
-      totalDevices: devices.length,
-      onlineDevices,
-      uniqueLocations
-    };
-  }
-  
-  // Función para verificar si un dispositivo está realmente online
-  function isDeviceOnline(lastSeenDate) {
-    if (!lastSeenDate) return false;
-    
-    const lastSeen = new Date(lastSeenDate);
-    const now = new Date();
-    const diffMinutes = (now - lastSeen) / (1000 * 60);
-    
-    return diffMinutes < OFFLINE_THRESHOLD_MINUTES;
-  }
   
   // Obtener estado de conexión realtime
   const getRealtimeStatusDisplay = () => {
@@ -568,31 +545,36 @@ function isDeviceOnline(lastSeenDate) {
         return {
           color: 'emerald',
           text: '🟢 Tiempo real activo',
-          description: 'Actualizaciones instantáneas'
+          description: 'Actualizaciones instantáneas',
+          icon: <CheckCircle className="w-4 h-4 mr-2" />
         };
       case 'connecting':
         return {
           color: 'amber',
           text: '🟡 Conectando...',
-          description: 'Estableciendo conexión'
+          description: 'Estableciendo conexión',
+          icon: <Activity className="w-4 h-4 mr-2 animate-pulse" />
         };
       case 'error':
         return {
           color: 'red',
           text: '🔴 Sin tiempo real',
-          description: reconnectCount < 5 ? `Reintento ${reconnectCount}/5` : 'Usando polling'
+          description: reconnectCount < RECONNECT_MAX_ATTEMPTS ? `Reintento ${reconnectCount}/${RECONNECT_MAX_ATTEMPTS}` : 'Reconexión fallida',
+          icon: <AlertCircle className="w-4 h-4 mr-2" />
         };
       case 'disabled':
         return {
           color: 'slate',
-          text: '⚪ Modo polling',
-          description: `Actualización cada ${UPDATE_INTERVAL_SECONDS}s`
+          text: '⚪ Desconectado',
+          description: 'Conexión desactivada',
+          icon: <Clock className="w-4 h-4 mr-2" />
         };
       default:
         return {
           color: 'slate',
-          text: '⚪ Desconectado',
-          description: 'Sin conexión'
+          text: '⚪ Iniciando...',
+          description: 'Preparando conexión',
+          icon: <XCircle className="w-4 h-4 mr-2" />
         };
     }
   };
@@ -619,28 +601,14 @@ function isDeviceOnline(lastSeenDate) {
       
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
-        <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent flex items-center">
               <Car className="w-10 h-10 mr-3 text-orange-500" />
               Dispositivos Conectados
             </h1>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={handleManualRefresh}
-                disabled={loading}
-                className={`${loading 
-                  ? 'bg-gray-600 cursor-not-allowed' 
-                  : 'bg-orange-600 hover:bg-orange-700'} 
-                  text-white px-4 py-2 rounded-xl font-medium flex items-center transition-colors`}
-              >
-                <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Actualizando...' : 'Actualizar'}
-              </button>
-              <div className="text-right">
-                <p className="text-xs text-slate-400">Última actualización</p>
-                <p className="text-sm text-slate-300">{lastUpdate.toLocaleTimeString()}</p>
-              </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Última actualización</p>
+              <p className="text-sm text-slate-300">{lastUpdate.toLocaleTimeString()}</p>
             </div>
           </div>
           <p className="text-slate-300 text-lg">Monitoreo en tiempo real de dispositivos Publi-Taxi</p>
@@ -685,52 +653,22 @@ function isDeviceOnline(lastSeenDate) {
           </div>
         </div>
         
-        {/* Estado de conexión y diagnóstico */}
+        {/* Estado de conexión */}
         <div className={`mb-6 p-4 rounded-xl backdrop-blur bg-${realtimeDisplay.color}-500/10 border border-${realtimeDisplay.color}-500/30`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <span className="text-lg font-medium">{realtimeDisplay.text}</span>
               <span className="text-sm text-slate-400">{realtimeDisplay.description}</span>
             </div>
-            <div className="flex items-center space-x-4 text-sm">
-              <span className="text-slate-400">
-                Próxima actualización: <span className="font-mono text-slate-300">{nextPollTime}s</span>
-              </span>
-              {realtimeStatus === 'error' && reconnectCount < 5 && (
-                <button 
-                  onClick={() => setReconnectCount(0)}
-                  className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs"
-                >
-                  Reintentar ahora
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* Panel de diagnóstico (temporal) */}
-        <div className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-xs">
-          <h4 className="text-sm font-semibold text-slate-300 mb-2">🔍 Diagnóstico</h4>
-          <div className="grid grid-cols-2 gap-4 text-slate-400">
-            <div>
-              <p>Total dispositivos cargados: <span className="text-white">{devices.length}</span></p>
-              <p>Dispositivos online: <span className="text-emerald-400">{devices.filter(d => d.status === 'online').length}</span></p>
-              <p>Dispositivos offline: <span className="text-red-400">{devices.filter(d => d.status === 'offline').length}</span></p>
-            </div>
-            <div>
-              <p>Filtro actual: <span className="text-white">{filter}</span></p>
-              <p>Dispositivos filtrados: <span className="text-white">{filteredDevices.length}</span></p>
-              <p>Última actualización: <span className="text-white">{lastUpdate.toLocaleTimeString()}</span></p>
-            </div>
-          </div>
-          <div className="mt-2 pt-2 border-t border-slate-700">
-            <p className="text-slate-400">Si no ves dispositivos activos, verifica que:</p>
-            <ul className="text-slate-500 ml-4 mt-1">
-              <li>• Los dispositivos en /display estén enviando heartbeats</li>
-              <li>• La tabla connected_devices tenga registros con status=&apos;online&apos;</li>
-              <li>• El campo last_seen sea reciente (menos de {OFFLINE_THRESHOLD_MINUTES} minutos)</li>
-              <li>• Las actualizaciones ocurren cada {UPDATE_INTERVAL_SECONDS} segundos</li>
-            </ul>
+            {realtimeStatus === 'error' && reconnectCount < RECONNECT_MAX_ATTEMPTS && (
+              <button 
+                onClick={handleReconnect}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs"
+              >
+                <RefreshCw className="w-4 h-4 mr-2 inline" />
+                Reconectar
+              </button>
+            )}
           </div>
         </div>
         
@@ -796,135 +734,155 @@ function isDeviceOnline(lastSeenDate) {
             <p className="text-slate-300 text-lg">Cargando dispositivos...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-slate-800/50 backdrop-blur rounded-xl overflow-hidden border border-slate-700/50 shadow-xl">
             {filteredDevices.length === 0 ? (
-              <div className="col-span-full bg-slate-800/50 backdrop-blur rounded-2xl p-12 text-center border border-slate-700/50">
+              <div className="p-12 text-center">
                 <Car className="w-16 h-16 text-slate-500 mx-auto mb-4" />
                 <p className="text-slate-400 text-lg">No se encontraron dispositivos</p>
                 <p className="text-slate-500 text-sm mt-2">Intenta ajustar los filtros de búsqueda</p>
               </div>
             ) : (
-              filteredDevices.map(device => (
-                <div key={device.id} className="bg-slate-800/50 backdrop-blur rounded-xl overflow-hidden border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]">
-                  <div className="p-6 relative">
-                    {/* Indicador de estado */}
-                    <div className="absolute top-4 right-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(device.status)}`}>
-                        {device.status === 'online' ? (
-                          <>
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
-                            En línea
-                          </>
-                        ) : (
-                          <>
-                            <span className="w-2 h-2 rounded-full bg-red-400 mr-2"></span>
-                            Sin conexión
-                          </>
-                        )}
-                      </span>
-                    </div>
-                    
-                    {/* Encabezado del dispositivo */}
-                    <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500/20 to-purple-500/20 flex items-center justify-center border border-slate-600/50 mr-4">
-                        {getDeviceIcon(device.device_type)}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{device.name || 'Sin nombre'}</h3>
-                        <p className="text-slate-400 text-sm flex items-center">
-                          <Globe className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                          {device.ip || 'IP desconocida'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Detalles del dispositivo */}
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 text-slate-400 mr-2" />
-                          <div>
-                            <p className="text-xs text-slate-500">Última vez</p>
-                            <p className="text-sm text-slate-300">{formatRelativeTime(device.last_seen)}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 text-slate-400 mr-2" />
-                          <div>
-                            <p className="text-xs text-slate-500">Ubicación</p>
-                            <p className="text-sm text-slate-300">{device.location || 'Desconocida'}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center">
-                          <Cpu className="w-4 h-4 text-slate-400 mr-2" />
-                          <div>
-                            <p className="text-xs text-slate-500">Sistema</p>
-                            <p className="text-sm text-slate-300">{device.os || 'Desconocido'}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <Wifi className="w-4 h-4 text-slate-400 mr-2" />
-                          <div>
-                            <p className="text-xs text-slate-500">Red</p>
-                            <p className="text-sm text-slate-300">{device.network || 'Desconocida'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Información adicional */}
-                    {device.current_ad && (
-                      <div className="mt-4 bg-slate-700/30 rounded-lg p-3">
-                        <p className="text-xs text-slate-400 mb-1">Anuncio actual</p>
-                        <p className="text-sm text-white font-medium truncate">{device.current_ad}</p>
-                      </div>
-                    )}
-                    
-                    {device.battery && device.status === 'online' && (
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-slate-400 flex items-center">
-                            <Battery className="w-3.5 h-3.5 mr-1" />
-                            Batería
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-900/50 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Estado</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Dispositivo</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Última conexión</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Sistema</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Ubicación</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Red</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Batería</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Anuncio actual</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Info</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDevices.map((device, index) => (
+                      <tr 
+                        key={device.id} 
+                        className={`${index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-800/10'} hover:bg-slate-700/30 transition-colors`}
+                      >
+                        {/* Estado */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(device.status)}`}>
+                            {device.status === 'online' ? (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                                En línea
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-red-400 mr-1.5"></span>
+                                Offline
+                              </>
+                            )}
                           </span>
-                          <span className="text-xs text-slate-400">{device.battery}%</span>
-                        </div>
-                        <div className="w-full bg-slate-700/50 rounded-full h-1.5">
-                          <div 
-                            className={`h-1.5 rounded-full transition-all ${
-                              device.battery > 60 ? 'bg-emerald-400' : 
-                              device.battery > 20 ? 'bg-amber-400' : 'bg-red-400'
-                            }`} 
-                            style={{ width: `${device.battery}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Pie de página */}
-                  <div className="bg-slate-900/30 border-t border-slate-700/50 px-6 py-3 flex justify-between items-center">
-                    <span className="text-xs text-slate-400 flex items-center">
-                      <Calendar className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                      {device.first_seen ? new Date(device.first_seen).toLocaleDateString() : 'N/A'}
-                    </span>
-                    {device.resolution && (
-                      <span className="text-xs text-slate-400">
-                        {device.resolution}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+                        </td>
+                        
+                        {/* Dispositivo */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded bg-gradient-to-br from-orange-500/20 to-purple-500/20 flex items-center justify-center border border-slate-600/50 mr-3">
+                              {getDeviceIcon(device.device_type)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{device.name || 'Sin nombre'}</div>
+                              <div className="text-xs text-slate-400">{device.ip || 'IP desconocida'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        
+                        {/* Última conexión */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <Clock className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                            <span className="text-sm text-slate-300">{formatRelativeTime(device.last_seen)}</span>
+                          </div>
+                        </td>
+                        
+                        {/* Sistema */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <Cpu className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                            <span className="text-sm text-slate-300">{device.os || 'Desconocido'}</span>
+                          </div>
+                        </td>
+                        
+                        {/* Ubicación */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <MapPin className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                            <span className="text-sm text-slate-300">{device.location || 'Desconocida'}</span>
+                          </div>
+                        </td>
+                        
+                        {/* Red */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <Wifi className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                            <span className="text-sm text-slate-300">{device.network || 'Desconocida'}</span>
+                          </div>
+                        </td>
+                        
+                        {/* Batería */}
+                        <td className="px-4 py-3">
+                          {device.battery ? (
+                            <div className="flex items-center">
+                              <Battery className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                              <div className="flex items-center space-x-2">
+                                <div className="w-16 bg-slate-700/50 rounded-full h-1.5">
+                                  <div 
+                                    className={`h-1.5 rounded-full ${
+                                      device.battery > 60 ? 'bg-emerald-400' : 
+                                      device.battery > 20 ? 'bg-amber-400' : 'bg-red-400'
+                                    }`} 
+                                    style={{ width: `${device.battery}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs text-slate-400">{device.battery}%</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-slate-500">-</span>
+                          )}
+                        </td>
+                        
+                        {/* Anuncio actual */}
+                        <td className="px-4 py-3">
+                          {device.current_ad ? (
+                            <div className="max-w-[200px] truncate text-sm text-slate-300">
+                              {device.current_ad}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-slate-500">Sin anuncio</span>
+                          )}
+                        </td>
+                        
+                        {/* Info adicional */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-2 text-xs text-slate-400">
+                            <div title="Primera conexión" className="flex items-center">
+                              <Calendar className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                              {device.first_seen ? new Date(device.first_seen).toLocaleDateString() : 'N/A'}
+                            </div>
+                            {device.resolution && (
+                              <div title="Resolución" className="flex items-center">
+                                <Monitor className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                                {device.resolution}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
       </div>
-    </div>
-  );
+  )
+  
 }
