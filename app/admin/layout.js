@@ -198,7 +198,7 @@ useEffect(() => {
                     Calculator
                   </Link>
 
-                  <Link
+                  {/*<Link
                     href="/admin/realtime"
                     className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${
                       pathname === "/admin/realtime"
@@ -213,7 +213,7 @@ useEffect(() => {
                         {onlineDevicesCount}
                       </span>
                     )}
-                  </Link>
+                  </Link>*/}
                 </div>
               </div>
               <div className="flex items-center space-x-4">

@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import supabase from "@/lib/supabaseClient";
 import { generatePaymentUrl, getPromotionalMessage } from "@/lib/paymentUtils";
 
+
+// Initialize i18next
+
+
 // Brand colors
 const ORANGE = "#ff8000";
 const GRADIENT =
@@ -12,11 +16,12 @@ const DARK_GRADIENT =
   "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #404040 100%)";
 
 // Time slot definitions
+
 const TIME_SLOTS = {
   morning: { name: "Mañana", startHour: 0, endHour: 8, color: "blue" },
   afternoon: { name: "Tarde", startHour: 8, endHour: 16, color: "green" },
   night: { name: "Noche", startHour: 16, endHour: 24, color: "purple" },
-};
+}; 
 
 export default function DisplayPage() {
   const [allAds, setAllAds] = useState([]);
@@ -35,6 +40,9 @@ export default function DisplayPage() {
   const [weatherData, setWeatherData] = useState(null);
   const [showWeather, setShowWeather] = useState(false);
   const [weatherLoading, setWeatherLoading] = useState(true); // Start as loading
+  
+
+  // Time slot definitions with translations
 
   // First, add this new state variable to your existing state declarations
   const [deviceId, setDeviceId] = useState("");
@@ -1500,7 +1508,7 @@ export default function DisplayPage() {
                   : "Desconectado"}
               </span>
             </div>
-            <div className="flex items-center space-x-2">
+            {/*<div className="flex items-center space-x-2">
               <div className="bg-white p-2 rounded-lg shadow-lg">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${window.location.origin}/language-selector`)}`}
@@ -1509,7 +1517,7 @@ export default function DisplayPage() {
                 />
               </div>
               <span className="text-sm font-medium">Idiomas</span>
-            </div>
+            </div>*/}
 
             {/* Debug weather button - temporary for testing 
             <button
