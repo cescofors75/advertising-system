@@ -1500,6 +1500,16 @@ export default function DisplayPage() {
                   : "Desconectado"}
               </span>
             </div>
+            <div className="flex items-center space-x-2">
+              <div className="bg-white p-2 rounded-lg shadow-lg">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${window.location.origin}/language-selector`)}`}
+                  alt="Language Selector QR"
+                  className="w-8 h-8"
+                />
+              </div>
+              <span className="text-sm font-medium">Idiomas</span>
+            </div>
 
             {/* Debug weather button - temporary for testing 
             <button
