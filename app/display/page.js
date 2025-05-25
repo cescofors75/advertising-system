@@ -795,293 +795,310 @@ export default function DisplayPage() {
   }, [currentAdIndexIndex, showWeather, filteredAds.length]); // Removed weatherData to fix dependency size issue
 
   const WeatherScreen = () => {
-    console.log("🌤️ WeatherScreen component rendering...", {
-      weatherData,
-      isClient,
-    });
+  console.log("🌤️ WeatherScreen component rendering...", {
+    weatherData,
+    isClient,
+  });
 
-    if (!weatherData) {
-      console.log("❌ No weather data available");
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="text-6xl mb-4 animate-pulse">🌤️</div>
-            <h2 className="text-4xl font-bold mb-4">Cargando el tiempo...</h2>
-            <p className="text-xl">
-              Obteniendo datos meteorológicos de Lloret de Mar
+  if (!weatherData) {
+    console.log("❌ No weather data available");
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-orange-900/20">
+        <div className="text-center text-white">
+          <div className="text-6xl mb-4 animate-pulse">🌤️</div>
+          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
+            Cargando el tiempo...
+          </h2>
+          <p className="text-xl text-slate-300">
+            Obteniendo datos meteorológicos de Lloret de Mar
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log("✅ Weather data available, rendering full screen");
+  const { current, forecast, location } = weatherData;
+
+  return (
+    <div className="w-full h-full flex flex-col relative overflow-auto">
+      {/* Fondo Premium Profesional */}
+      <div className="absolute inset-0">
+        {/* Gradiente base profesional según el clima */}
+        <div
+          className={`absolute inset-0 transition-all duration-3000 ${
+            current.icon === "☀️"
+              ? "bg-gradient-to-br from-slate-900 via-blue-900/80 to-orange-900/40"
+              : current.icon === "⛅" || current.icon === "🌤️"
+              ? "bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900/60"
+              : current.icon === "🌧️" || current.icon === "🌦️"
+              ? "bg-gradient-to-br from-slate-900 via-slate-700 to-blue-800/50"
+              : current.icon === "⛈️"
+              ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-600"
+              : "bg-gradient-to-br from-slate-900 via-blue-900/80 to-orange-900/40"
+          }`}
+        >
+          {/* Overlay de textura premium */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-orange-500/10"></div>
+        </div>
+
+        {/* Elementos animados profesionales */}
+        {isClient && (
+          <div className="absolute inset-0">
+            {/* Soleado - partículas doradas sutiles */}
+            {current.icon === "☀️" &&
+              [...Array(15)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-orange-300/40 rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 4}s`,
+                    animationDuration: `${3 + Math.random() * 2}s`,
+                  }}
+                />
+              ))}
+
+            {/* Nublado - elementos geométricos sutiles */}
+            {(current.icon === "⛅" ||
+              current.icon === "☁️" ||
+              current.icon === "🌤️") &&
+              [...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute opacity-10"
+                  style={{
+                    left: `${Math.random() * 90}%`,
+                    top: `${Math.random() * 80}%`,
+                    width: `${60 + i * 20}px`,
+                    height: `${30 + i * 10}px`,
+                    background: "linear-gradient(45deg, rgba(148, 163, 184, 0.3), rgba(203, 213, 225, 0.2))",
+                    borderRadius: "50px",
+                    animationDelay: `${Math.random() * 3}s`,
+                    animationDuration: `${4 + Math.random()}s`,
+                  }}
+                  
+                />
+              ))}
+
+            {/* Lluvia - líneas elegantes */}
+            {(current.icon === "🌧️" || current.icon === "🌦️") &&
+              [...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-px h-6 bg-gradient-to-b from-blue-300/30 to-transparent"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animation: `fall ${2 + Math.random()}s linear infinite`,
+                    animationDelay: `${Math.random() * 2}s`,
+                  }}
+                />
+              ))}
+          </div>
+        )}
+      </div>
+
+      {/* Contenido del Tiempo */}
+      <div className="relative z-10 flex flex-col h-full text-white">
+        {/* Header Premium */}
+        <div className="flex justify-between items-center p-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
+              {location}
+            </h1>
+            <p className="text-slate-300 font-medium">Costa Brava • Tiempo en Vivo</p>
+          </div>
+          <div className="text-right">
+            <p className="text-slate-400 text-sm font-medium">Actualizado</p>
+            <p className="text-lg font-bold text-orange-300">
+              {current.lastUpdated?.toLocaleTimeString("es-ES", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </p>
           </div>
         </div>
-      );
-    }
 
-    console.log("✅ Weather data available, rendering full screen");
-    const { current, forecast, location } = weatherData;
-
-    return (
-      <div className="w-full h-full flex flex-col relative overflow-auto">
-        {/* Animated Weather Background */}
-        <div className="absolute inset-0">
-          {/* Sky gradient based on weather */}
-          <div
-            className={`absolute inset-0 transition-all duration-2000 ${
-              current.icon === "☀️"
-                ? "bg-gradient-to-b from-blue-400 via-blue-300 to-blue-200"
-                : current.icon === "⛅" || current.icon === "🌤️"
-                ? "bg-gradient-to-b from-blue-500 via-blue-400 to-blue-300"
-                : current.icon === "🌧️" || current.icon === "🌦️"
-                ? "bg-gradient-to-b from-gray-600 via-gray-500 to-gray-400"
-                : current.icon === "⛈️"
-                ? "bg-gradient-to-b from-gray-800 via-gray-700 to-gray-600"
-                : "bg-gradient-to-b from-blue-400 via-blue-300 to-blue-200"
-            }`}
-          ></div>
-
-          {/* Animated elements based on weather */}
-          {isClient && (
-            <div className="absolute inset-0">
-              {/* Sunny - floating particles */}
-              {current.icon === "☀️" &&
-                [...Array(20)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-2 h-2 bg-yellow-300 rounded-full opacity-60 animate-bounce"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animationDelay: `${Math.random() * 3}s`,
-                      animationDuration: `${2 + Math.random() * 2}s`,
-                    }}
-                  />
-                ))}
-
-              {/* Cloudy - floating clouds */}
-              {(current.icon === "⛅" ||
-                current.icon === "☁️" ||
-                current.icon === "🌤️") &&
-                [...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute text-6xl opacity-30 animate-pulse"
-                    style={{
-                      left: `${Math.random() * 90}%`,
-                      top: `${Math.random() * 80}%`,
-                      animationDelay: `${Math.random() * 2}s`,
-                      animationDuration: `${3 + Math.random()}s`,
-                    }}
-                  >
-                    ☁️
-                  </div>
-                ))}
-
-              {/* Rainy - falling drops */}
-              {(current.icon === "🌧️" || current.icon === "🌦️") &&
-                [...Array(30)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-1 h-8 bg-blue-300 opacity-70"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      animation: `fall ${1 + Math.random()}s linear infinite`,
-                      animationDelay: `${Math.random() * 2}s`,
-                    }}
-                  />
-                ))}
-            </div>
-          )}
-        </div>
-
-        {/* Weather Content */}
-        <div className="relative z-10 flex flex-col h-full text-white">
-          {/* Header */}
-          <div className="flex justify-between items-center p-2 bg-black/30 backdrop-blur-md">
-            <div>
-              <h1 className="text-2xl font-bold">{location}</h1>
-              <p className="text-sm opacity-90">El tiempo en la Costa Brava</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm opacity-90">Actualizado</p>
-              <p className="text-base font-medium">
-                {current.lastUpdated?.toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-          </div>
-
-          {/* Main Weather Display */}
-          <div className="flex-grow flex overflow-hidden py-1">
-            {/* Current Weather - Left Side */}
-            <div className="flex-1 flex flex-col justify-center items-center p-2">
-              <div className="text-center">
-                <div className="text-5xl mb-1 animate-pulse">
-                  {current.icon}
-                </div>
-                <div className="text-6xl font-bold mb-1 text-shadow-lg">
-                  {current.temp}°
-                </div>
-                <div className="text-xl font-medium mb-2 capitalize">
-                  {current.description}
-                </div>
-                <div className="text-lg opacity-90">
-                  Sensación térmica: {current.feels_like}°
-                </div>
+        {/* Display Principal del Tiempo */}
+        <div className="flex-grow flex overflow-hidden py-6">
+          {/* Temperatura Actual - Lado Izquierdo */}
+          <div className="flex-1 flex flex-col justify-center items-center p-6">
+            <div className="text-center">
+              <div className="text-7xl mb-4 filter drop-shadow-2xl">
+                {current.icon}
               </div>
-            </div>
-
-            {/* Weather Details - Right Side */}
-            <div className="flex-1 p-2">
-              <h2 className="text-xl font-bold mb-2">Condiciones Actuales</h2>
-              
-              <div className="grid grid-cols-2 gap-2 text-base">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">💧</span>
-                    <div>
-                      <p className="opacity-90">Humedad</p>
-                      <p className="text-xl font-bold">{current.humidity}%</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">💨</span>
-                    <div>
-                      <p className="opacity-90">Viento</p>
-                      <p className="text-xl font-bold">
-                        {current.wind_speed} km/h
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🔍</span>
-                    <div>
-                      <p className="opacity-90">Visibilidad</p>
-                      <p className="text-xl font-bold">
-                        {current.visibility} km
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">📊</span>
-                    <div>
-                      <p className="opacity-90">Presión</p>
-                      <p className="text-xl font-bold">
-                        {current.pressure} mb
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-8xl font-light mb-3 bg-gradient-to-b from-white to-orange-200 bg-clip-text text-transparent filter drop-shadow-lg">
+                {current.temp}°
               </div>
-
-              {/* Sunrise/Sunset */}
-              <div className="mt-2 bg-white/10 backdrop-blur-sm rounded-2xl p-2">
-                <div className="flex justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🌅</span>
-                    <div>
-                      <p className="opacity-90">Amanecer</p>
-                      <p className="text-xl font-bold">
-                        {current.sunrise?.toLocaleTimeString("es-ES", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🌇</span>
-                    <div>
-                      <p className="opacity-90">Atardecer</p>
-                      <p className="text-xl font-bold">
-                        {current.sunset?.toLocaleTimeString("es-ES", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-2xl font-medium mb-4 capitalize text-slate-200">
+                {current.description}
+              </div>
+              <div className="text-lg text-slate-300 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+                Sensación térmica: <span className="font-semibold text-orange-300">{current.feels_like}°</span>
               </div>
             </div>
           </div>
 
-          {/* 7-Day Forecast */}
-          <div className="bg-black/30 backdrop-blur-md py-1 px-2">
-            <h2 className="text-xl font-bold mb-1 text-center">
-              Previsión de la Semana
+          {/* Detalles del Tiempo - Lado Derecho */}
+          <div className="flex-1 p-6">
+            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-white to-orange-200 bg-clip-text text-transparent">
+              Condiciones Actuales
             </h2>
-            <div className="flex justify-between space-x-1 overflow-x-auto pb-1 hide-scrollbar">
-              {forecast.slice(0, 7).map((day, index) => (
-                <div
-                  key={index}
-                  className="flex-1 min-w-[80px] text-center bg-white/10 backdrop-blur-sm rounded-2xl p-1"
-                >
-                  <p className="text-xs font-medium mb-0.5">
-                    {index === 0
-                      ? "Hoy"
-                      : index === 1
-                      ? "Mañana"
-                      : day.date.toLocaleDateString("es-ES", {
-                          weekday: "short",
-                        })}
-                  </p>
-                  <div className="text-2xl mb-0.5 animate-pulse">{day.icon}</div>
-                  <div className="text-sm font-bold">
-                    {day.temp_max}° / {day.temp_min}°
-                  </div>
-                  <p className="text-xs opacity-90 mt-0.5 capitalize truncate">
-                    {day.description}
-                  </p>
-                  <div className="flex justify-center space-x-1 mt-0.5 text-xs opacity-80">
-                    <span>💧{day.humidity}%</span>
-                    <span>💨{day.wind_speed}km/h</span>
+            
+            <div className="grid grid-cols-2 gap-4 text-base">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl filter drop-shadow-lg">💧</span>
+                  <div>
+                    <p className="text-slate-300 font-medium">Humedad</p>
+                    <p className="text-2xl font-bold text-blue-300">{current.humidity}%</p>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl filter drop-shadow-lg">💨</span>
+                  <div>
+                    <p className="text-slate-300 font-medium">Viento</p>
+                    <p className="text-2xl font-bold text-cyan-300">
+                      {current.wind_speed} km/h
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl filter drop-shadow-lg">🔍</span>
+                  <div>
+                    <p className="text-slate-300 font-medium">Visibilidad</p>
+                    <p className="text-2xl font-bold text-green-300">
+                      {current.visibility} km
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-all duration-300">
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl filter drop-shadow-lg">📊</span>
+                  <div>
+                    <p className="text-slate-300 font-medium">Presión</p>
+                    <p className="text-2xl font-bold text-purple-300">
+                      {current.pressure} mb
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Amanecer/Atardecer Premium */}
+            <div className="mt-6 bg-gradient-to-r from-orange-900/30 to-blue-900/30 backdrop-blur-md rounded-2xl p-4 border border-orange-500/20">
+              <div className="flex justify-between">
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl filter drop-shadow-lg">🌅</span>
+                  <div>
+                    <p className="text-slate-300 font-medium">Amanecer</p>
+                    <p className="text-xl font-bold text-orange-300">
+                      {current.sunrise?.toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl filter drop-shadow-lg">🌇</span>
+                  <div>
+                    <p className="text-slate-300 font-medium">Atardecer</p>
+                    <p className="text-xl font-bold text-orange-400">
+                      {current.sunset?.toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Custom animations */}
-        <style jsx>{`
-          @keyframes fall {
-            0% {
-              transform: translateY(-100vh) rotate(10deg);
-            }
-            100% {
-              transform: translateY(100vh) rotate(10deg);
-            }
-          }
-          .text-shadow-lg {
-            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          }
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translate(-50%, 20px);
-            }
-            to {
-              opacity: 1;
-              transform: translate(-50%, 0);
-            }
-          }
-          .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-          }
-        `}</style>
+        {/* Previsión de 7 Días Premium */}
+        <div className="bg-black/40 backdrop-blur-xl py-4 px-6 border-t border-white/10">
+          <h2 className="text-2xl font-bold mb-4 text-center bg-gradient-to-r from-white via-orange-200 to-white bg-clip-text text-transparent">
+            Previsión Semanal
+          </h2>
+          <div className="flex justify-between space-x-2 overflow-x-auto pb-2">
+            {forecast.slice(0, 7).map((day, index) => (
+              <div
+                key={index}
+                className="flex-1 min-w-[100px] text-center bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 hover:bg-white/15 transition-all duration-300"
+              >
+                <p className="text-sm font-semibold mb-2 text-slate-300">
+                  {index === 0
+                    ? "Hoy"
+                    : index === 1
+                    ? "Mañana"
+                    : day.date.toLocaleDateString("es-ES", {
+                        weekday: "short",
+                      })}
+                </p>
+                <div className="text-3xl mb-2 filter drop-shadow-lg">{day.icon}</div>
+                <div className="text-lg font-bold text-white">
+                  <span className="text-orange-300">{day.temp_max}°</span> / <span className="text-blue-300">{day.temp_min}°</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-2 capitalize truncate">
+                  {day.description}
+                </p>
+                <div className="flex justify-center space-x-2 mt-2 text-xs text-slate-400">
+                  <span className="flex items-center">
+                    <span className="text-blue-400">💧</span>{day.humidity}%
+                  </span>
+                  <span className="flex items-center">
+                    <span className="text-cyan-400">💨</span>{day.wind_speed}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    );
-  };
+
+      {/* Animaciones CSS personalizadas */}
+      <style jsx>{`
+        @keyframes fall {
+          0% {
+            transform: translateY(-100vh) rotate(10deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(10deg);
+            opacity: 0;
+          }
+        }
+        
+        .hide-scrollbar {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </div>
+  );
+};
 
   const LoadingScreen = () => (
     <div className="flex flex-col h-screen bg-black relative overflow-hidden">
