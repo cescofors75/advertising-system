@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function GooglePayCheckoutPage() {
+// Componente que usa useSearchParams()
+function GooglePayCheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -164,6 +165,37 @@ export default function GooglePayCheckoutPage() {
         <p className="mt-2">Desarrollado para el sistema de publicidad digital</p>
       </footer>
     </div>
+  );
+}
+
+// Fallback para el Suspense
+function CheckoutLoading() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="flex items-center justify-center mb-4">
+          <span className="text-blue-600 text-4xl font-bold">G</span>
+          <span className="text-red-500 text-4xl font-bold">o</span>
+          <span className="text-yellow-400 text-4xl font-bold">o</span>
+          <span className="text-blue-600 text-4xl font-bold">g</span>
+          <span className="text-green-500 text-4xl font-bold">l</span>
+          <span className="text-red-500 text-4xl font-bold">e</span>
+          <span className="ml-2 text-gray-700 text-2xl font-bold">Pay</span>
+        </div>
+        <div className="inline-block w-12 h-12 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin mb-4"></div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Iniciando Google Pay</h2>
+        <p className="text-gray-600">Preparando su pasarela de pago segura...</p>
+      </div>
+    </div>
+  );
+}
+
+// Componente principal que usa Suspense
+export default function GooglePayCheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutLoading />}>
+      <GooglePayCheckoutContent />
+    </Suspense>
   );
 }
 

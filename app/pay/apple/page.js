@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function ApplePayCheckoutPage() {
+// Componente que usa useSearchParams()
+function ApplePayCheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -139,6 +140,34 @@ export default function ApplePayCheckoutPage() {
         <p className="mt-2">Desarrollado para el sistema de publicidad digital</p>
       </footer>
     </div>
+  );
+}
+
+// Fallback para el Suspense
+function CheckoutLoading() {
+  return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+      <div className="w-full max-w-md bg-gray-900 rounded-2xl shadow-2xl p-8 text-center">
+        <div className="flex items-center justify-center mb-4">
+          <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.04 13.71c-.02-1.46.68-2.77 1.68-3.56-1.59-.7-3.79-.58-5.04.42-1.37 1.08-2.7 2.81-2.23 4.95 1.02 1.01 2.42-.4 3.84-.41 1.35-.01 2.77 1.41 3.75.31-.7-.44-1.99-.92-2-1.71zm-2.7-9.4c.66-.9 1.08-2.14.9-3.31-1.11.06-2.48.78-3.27 1.74-.7.84-1.27 2.13-1.05 3.36 1.2.09 2.48-.53 3.42-1.79z" />
+          </svg>
+          <span className="ml-2 text-white text-2xl font-bold">Pay</span>
+        </div>
+        <div className="inline-block w-12 h-12 border-4 border-t-blue-500 border-gray-700 rounded-full animate-spin mb-4"></div>
+        <h2 className="text-xl font-bold text-white mb-2">Iniciando Apple Pay</h2>
+        <p className="text-gray-400">Preparando su pasarela de pago segura...</p>
+      </div>
+    </div>
+  );
+}
+
+// Componente principal que usa Suspense
+export default function ApplePayCheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutLoading />}>
+      <ApplePayCheckoutContent />
+    </Suspense>
   );
 }
 

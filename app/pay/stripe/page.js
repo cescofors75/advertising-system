@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function StripeCheckoutPage() {
+// Componente que usa useSearchParams()
+function StripeCheckout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -214,6 +215,28 @@ export default function StripeCheckoutPage() {
         <p className="mt-2">Desarrollado para el sistema de publicidad digital</p>
       </footer>
     </div>
+  );
+}
+
+// Fallback para el Suspense
+function CheckoutLoading() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="inline-block w-12 h-12 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mb-4"></div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Cargando pasarela de pago</h2>
+        <p className="text-gray-600">Preparando Stripe para procesar su pago...</p>
+      </div>
+    </div>
+  );
+}
+
+// Componente principal que usa Suspense
+export default function StripeCheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutLoading />}>
+      <StripeCheckout />
+    </Suspense>
   );
 }
 
