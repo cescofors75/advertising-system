@@ -1568,16 +1568,57 @@ export default function DisplayPage() {
                         loop
                         style={{ maxHeight: "calc(100vh - 150px)" }}
                       />
-                      {/* Banner-style QR Code for video at the top */}
+                      {/* Banner-style QR Code for video (position customizable) */}
                       {currentAdIndex.website_url && currentAdIndex.show_qr_code && (
-                        <div className="absolute top-0 left-0 right-0 w-full z-30">
+                        <div className={`absolute ${currentAdIndex.qr_position === 'bottom' ? 'bottom-16' : 'top-0'} left-0 right-0 w-full z-30`}>
                           <div className={`backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full ${
-                            currentAdIndex.qr_type === 'payment' ? 'bg-emerald-900/50' : 'bg-black/50'
+                            currentAdIndex.qr_type === 'payment' 
+                              ? currentAdIndex.qr_color_payment === 'red'
+                                ? 'bg-red-900/50'
+                                : currentAdIndex.qr_color_payment === 'green'
+                                  ? 'bg-green-900/50'
+                                  : currentAdIndex.qr_color_payment === 'blue'
+                                    ? 'bg-blue-900/50'
+                                    : currentAdIndex.qr_color_payment === 'indigo'
+                                      ? 'bg-indigo-900/50'
+                                      : currentAdIndex.qr_color_payment === 'pink'
+                                        ? 'bg-pink-900/50'
+                                        : currentAdIndex.qr_color_payment === 'teal'
+                                          ? 'bg-teal-900/50'
+                                          : currentAdIndex.qr_color_payment === 'white'
+                                            ? 'bg-white/50'
+                                            : currentAdIndex.qr_color_payment === 'purple'
+                                              ? 'bg-purple-900/50'
+                                              : 'bg-orange-900/50'
+                              : currentAdIndex.qr_color_web === 'blue'
+                                ? 'bg-blue-900/50'
+                                : currentAdIndex.qr_color_web === 'purple'
+                                  ? 'bg-purple-900/50'
+                                  : 'bg-black/50'
                           }`}>
+           
                             <div className="flex-grow flex items-center">
-                              <div className={`bg-white p-2 rounded-xl shadow-lg mr-4 ${
-                                currentAdIndex.qr_type === 'payment' ? 'border-2 border-emerald-400' : ''
-                              }`}>
+<div className={`bg-white p-2 rounded-xl shadow-lg mr-4 ${
+  currentAdIndex.qr_type === 'payment'
+    ? currentAdIndex.qr_color_payment === 'red'
+      ? 'border-2 border-red-400'
+      : currentAdIndex.qr_color_payment === 'green'
+        ? 'border-2 border-green-400'
+        : currentAdIndex.qr_color_payment === 'blue'
+          ? 'border-2 border-blue-400'
+          : currentAdIndex.qr_color_payment === 'indigo'
+            ? 'border-2 border-indigo-400'
+            : currentAdIndex.qr_color_payment === 'pink'
+              ? 'border-2 border-pink-400'
+              : currentAdIndex.qr_color_payment === 'teal'
+                ? 'border-2 border-teal-400'
+                : currentAdIndex.qr_color_payment === 'white'
+                  ? 'border-2 border-white'
+                  : currentAdIndex.qr_color_payment === 'purple'
+                    ? 'border-2 border-purple-400'
+                    : 'border-2 border-orange-400'
+    : ''
+}`}>
                                 <img
                                   src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
                                     currentAdIndex.qr_type === 'web' 
@@ -1609,8 +1650,24 @@ export default function DisplayPage() {
                               </div>
                             </div>
                             <div className={`ml-4 px-4 py-2 rounded-full border text-white font-bold text-sm animate-pulse ${
-                              currentAdIndex.qr_type === 'payment' 
-                                ? 'bg-emerald-500/30 border-emerald-400/50' 
+                              currentAdIndex.qr_type === 'payment'
+                                ? currentAdIndex.qr_color_payment === 'red'
+                                  ? 'bg-red-500/30 border-red-400/50'
+                                  : currentAdIndex.qr_color_payment === 'green'
+                                    ? 'bg-green-500/30 border-green-400/50'
+                                    : currentAdIndex.qr_color_payment === 'blue'
+                                      ? 'bg-blue-500/30 border-blue-400/50'
+                                      : currentAdIndex.qr_color_payment === 'indigo'
+                                        ? 'bg-indigo-500/30 border-indigo-400/50'
+                                        : currentAdIndex.qr_color_payment === 'pink'
+                                          ? 'bg-pink-500/30 border-pink-400/50'
+                                          : currentAdIndex.qr_color_payment === 'teal'
+                                            ? 'bg-teal-500/30 border-teal-400/50'
+                                            : currentAdIndex.qr_color_payment === 'white'
+                                              ? 'bg-white/30 border-white/50'
+                                              : currentAdIndex.qr_color_payment === 'purple'
+                                                ? 'bg-purple-500/30 border-purple-400/50'
+                                                : 'bg-orange-500/30 border-orange-400/50'
                                 : 'bg-white/30 border-white/50'
                             }`}>
                               {currentAdIndex.qr_type === 'payment' 
@@ -1633,15 +1690,31 @@ export default function DisplayPage() {
                       </div>
                       {/* Premium QR Code */}
                       {/* Empty div to maintain layout */}
-                      {/* QR Code for images - Banner Style at the top with orange tones */}
+                      {/* QR Code for images - Banner Style with customizable position and colors */}
                       {currentAdIndex && currentAdIndex.website_url && currentAdIndex.show_qr_code && (
-                        <div className="absolute top-0 left-0 right-0 w-full z-30">
+                        <div className={`absolute ${currentAdIndex.qr_position === 'bottom' ? 'bottom-16' : 'top-0'} left-0 right-0 w-full z-30`}>
                           <div className={`backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full ${
-                            currentAdIndex.qr_type === 'payment' ? 'bg-orange-900/50' : 'bg-black/50'
+                            currentAdIndex.qr_type === 'payment' 
+                              ? currentAdIndex.qr_color_payment === 'red'
+                                ? 'bg-red-900/50'
+                                : currentAdIndex.qr_color_payment === 'green'
+                                  ? 'bg-green-900/50'
+                                  : 'bg-orange-900/50'
+                              : currentAdIndex.qr_color_web === 'blue'
+                                ? 'bg-blue-900/50'
+                                : currentAdIndex.qr_color_web === 'purple'
+                                  ? 'bg-purple-900/50'
+                                  : 'bg-black/50'
                           }`}>
                             <div className="flex-grow flex items-center">
                               <div className={`bg-white p-2 rounded-xl shadow-lg mr-4 ${
-                                currentAdIndex.qr_type === 'payment' ? 'border-2 border-orange-400' : ''
+                                currentAdIndex.qr_type === 'payment'
+                                  ? currentAdIndex.qr_color_payment === 'red'
+                                    ? 'border-2 border-red-400'
+                                    : currentAdIndex.qr_color_payment === 'green'
+                                      ? 'border-2 border-green-400'
+                                      : 'border-2 border-orange-400'
+                                  : ''
                               }`}>
                                 <img
                                   src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
@@ -1674,8 +1747,12 @@ export default function DisplayPage() {
                               </div>
                             </div>
                             <div className={`ml-4 px-4 py-2 rounded-full border text-white font-bold text-sm animate-pulse ${
-                              currentAdIndex.qr_type === 'payment' 
-                                ? 'bg-orange-500/30 border-orange-400/50' 
+                              currentAdIndex.qr_type === 'payment'
+                                ? currentAdIndex.qr_color_payment === 'red'
+                                  ? 'bg-red-500/30 border-red-400/50'
+                                  : currentAdIndex.qr_color_payment === 'green'
+                                    ? 'bg-green-500/30 border-green-400/50'
+                                    : 'bg-orange-500/30 border-orange-400/50'
                                 : 'bg-white/30 border-white/50'
                             }`}>
                               {currentAdIndex.qr_type === 'payment' 

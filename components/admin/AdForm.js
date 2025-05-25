@@ -46,6 +46,10 @@ const emptyAd = {
     product_name: '', // Nuevo campo
     product_price: '', // Nuevo campo
     payment_provider: 'stripe', // Nuevo campo con Stripe como valor predeterminado
+    // Nuevas propiedades para personalización del banner
+    qr_position: 'top', // 'top' o 'bottom'
+    qr_color_web: 'black', // color para banner web (black, blue, purple)
+    qr_color_payment: 'orange', // color para banner payment (orange, red, green)
     // Add time slot fields directly to the ad object
     time_slot_morning: false,
     time_slot_afternoon: false,
@@ -128,6 +132,10 @@ const emptyAd = {
         product_name: formData.product_name, // Nuevo campo
         product_price: formData.product_price, // Nuevo campo
         payment_provider: formData.payment_provider, // Nuevo campo
+        // Nuevas propiedades para personalización del banner
+        qr_position: formData.qr_position || 'top',
+        qr_color_web: formData.qr_color_web || 'black',
+        qr_color_payment: formData.qr_color_payment || 'orange',
         // Add time slot fields
         time_slot_morning: selectedTimeSlots.morning,
         time_slot_afternoon: selectedTimeSlots.afternoon,
@@ -309,6 +317,274 @@ const emptyAd = {
                 </label>
               </div>
             </div>
+            
+            {/* Posición del Banner QR */}
+            <div className="p-4 bg-slate-800/50 rounded-xl">
+              <h3 className="text-lg font-semibold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                Personalización del Banner QR
+              </h3>
+              
+              {/* Selector de posición */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Posición del Banner
+                </label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="qr_position"
+                      value="top"
+                      checked={formData.qr_position === 'top' || !formData.qr_position}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-5 h-5 rounded-full border ${
+                      formData.qr_position === 'top' || !formData.qr_position ? 'border-blue-500 bg-blue-500' : 'border-slate-500'
+                    } flex items-center justify-center`}>
+                      {(formData.qr_position === 'top' || !formData.qr_position) && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
+                    </div>
+                    <span className="ml-2 text-slate-300 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="17 11 12 6 7 11" />
+                        <line x1="12" y1="18" x2="12" y2="6" />
+                      </svg>
+                      Banner Superior
+                    </span>
+                  </label>
+
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="qr_position"
+                      value="bottom"
+                      checked={formData.qr_position === 'bottom'}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className={`relative w-5 h-5 rounded-full border ${
+                      formData.qr_position === 'bottom' ? 'border-blue-500 bg-blue-500' : 'border-slate-500'
+                    } flex items-center justify-center`}>
+                      {formData.qr_position === 'bottom' && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
+                    </div>
+                    <span className="ml-2 text-slate-300 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="7 13 12 18 17 13" />
+                        <line x1="12" y1="6" x2="12" y2="18" />
+                      </svg>
+                      Banner Inferior
+                    </span>
+                  </label>
+                </div>
+              </div>
+              
+              {/* Selector de color para QR web */}
+              {formData.qr_type === 'web' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Color del Banner de Información
+                  </label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_web === 'black' || !formData.qr_color_web ? 'border-blue-500 bg-black/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_web"
+                        value="black"
+                        checked={formData.qr_color_web === 'black' || !formData.qr_color_web}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-black/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Negro</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_web === 'blue' ? 'border-blue-500 bg-blue-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_web"
+                        value="blue"
+                        checked={formData.qr_color_web === 'blue'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-blue-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Azul</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_web === 'purple' ? 'border-blue-500 bg-purple-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_web"
+                        value="purple"
+                        checked={formData.qr_color_web === 'purple'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-purple-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Morado</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+              
+              {/* Selector de color para QR payment */}
+              {formData.qr_type === 'payment' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Color del Banner de Venta Flash
+                  </label>
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Fila 1: Orange, Red, Green (existentes) */}
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'orange' || !formData.qr_color_payment ? 'border-blue-500 bg-orange-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="orange"
+                        checked={formData.qr_color_payment === 'orange' || !formData.qr_color_payment}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-orange-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Naranja</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'red' ? 'border-blue-500 bg-red-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="red"
+                        checked={formData.qr_color_payment === 'red'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-red-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Rojo</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'green' ? 'border-blue-500 bg-green-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="green"
+                        checked={formData.qr_color_payment === 'green'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-green-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Verde</span>
+                    </label>
+
+                    {/* Fila 2: Nuevos colores - Blue, Indigo, Pink */}
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'blue' ? 'border-blue-500 bg-blue-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="blue"
+                        checked={formData.qr_color_payment === 'blue'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-blue-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Azul</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'indigo' ? 'border-blue-500 bg-indigo-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="indigo"
+                        checked={formData.qr_color_payment === 'indigo'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-indigo-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Índigo</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'pink' ? 'border-blue-500 bg-pink-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="pink"
+                        checked={formData.qr_color_payment === 'pink'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-pink-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Rosa</span>
+                    </label>
+
+                    {/* Fila 3: Más colores - Teal, White, Purple */}
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'teal' ? 'border-blue-500 bg-teal-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="teal"
+                        checked={formData.qr_color_payment === 'teal'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-teal-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Turquesa</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'white' ? 'border-blue-500 bg-white/10' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="white"
+                        checked={formData.qr_color_payment === 'white'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-white/30 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Blanco</span>
+                    </label>
+                    
+                    <label className={`flex flex-col items-center border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                      formData.qr_color_payment === 'purple' ? 'border-blue-500 bg-purple-900/30' : 'border-slate-600 hover:border-slate-500'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="qr_color_payment"
+                        value="purple"
+                        checked={formData.qr_color_payment === 'purple'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="w-full h-8 bg-purple-900/50 rounded mb-2"></div>
+                      <span className="text-sm text-slate-300">Púrpura</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* URL del sitio web (si qr_type es 'web') */}
             {formData.qr_type === 'web' && (
@@ -430,139 +706,177 @@ const emptyAd = {
               </div>
             )}
 
-      {/* Vista previa del QR actualizada para mostrar información de pago */}
-      {((formData.qr_type === 'web' && formData.website_url) || 
-        (formData.qr_type === 'payment' && formData.product_name && formData.product_price)) && (
-        <div className="mt-4 bg-slate-800/50 rounded-xl overflow-hidden">
-          {formData.qr_type === 'web' ? (
-            // Vista previa para QR de web (mantener diseño actual)
-            <div className="p-4">
-              <p className="text-sm text-slate-400 mb-3">Vista previa del Código QR:</p>
-              <div className="flex justify-center">
-                <div className="bg-white p-2 rounded-lg">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                      formData.website_url
-                    )}`}
-                    alt="Código QR"
-                    className="block w-32 h-32"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Vista previa profesional para QR de pago con estilo "Hot Sell Power"
-            <div>
-              {/* Banner superior con degradado */}
-              <div className="bg-gradient-to-r from-emerald-600 to-blue-600 py-2 px-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-bold uppercase text-sm tracking-wider">Venta Flash</span>
-                  <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full animate-pulse">PAGO DIRECTO</span>
-                </div>
-              </div>
-              
-              {/* Contenido principal con diseño profesional */}
-              <div className="p-6 flex flex-col md:flex-row items-center md:items-stretch gap-6">
-                {/* QR con borde animado */}
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-emerald-500 rounded-lg opacity-75 blur animate-pulse"></div>
-                  <div className="relative bg-white p-3 rounded-lg">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                        `https://checkout.stripe.com/pay/cs_test_${Math.random().toString(36).substring(2, 10)}?product=${encodeURIComponent(formData.product_name)}&price=${isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price)}&currency=EUR`
-                      )}`}
-                      alt="Código QR"
-                      className="block w-44 h-44"
-                    />
-                  </div>
-                </div>
+            {/* Vista previa del QR actualizada para mostrar información de pago */}
+            {((formData.qr_type === 'web' && formData.website_url) || 
+              (formData.qr_type === 'payment' && formData.product_name && formData.product_price)) && (
+              <div className="mt-4">
+                <p className="text-sm text-slate-400 mb-3">Vista previa (aspecto en pantalla):</p>
                 
-                {/* Información del producto */}
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400 mb-2">
-                      {formData.product_name}
-                    </h3>
-                    
-                    {/* Precio con badge de oferta */}
-                    <div className="flex items-center mb-4">
-                      <span className="text-3xl font-bold text-white">{isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price).toFixed(2)}€</span>
-                      <div className="ml-3 flex flex-col">
-                        <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/30">
-                          OFERTA ESPECIAL
-                        </span>
-                        <span className="text-slate-400 text-xs mt-1">Escaneando este QR</span>
+                {/* Simulación de cómo se verá en la pantalla */}
+                <div className="relative overflow-hidden rounded-xl bg-slate-900 aspect-video flex items-center justify-center">
+                  {/* Imagen o video de fondo (real si existe) */}
+                  {formData.media_url ? (
+                    formData.media_type === 'video' ? (
+                      <video 
+                        className="absolute inset-0 w-full h-full object-contain"
+                        src={formData.media_url}
+                        muted
+                        autoPlay
+                        loop
+                      />
+                    ) : (
+                      <img 
+                        className="absolute inset-0 w-full h-full object-contain"
+                        src={formData.media_url}
+                        alt={formData.title}
+                      />
+                    )
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900"></div>
+                  )}
+                  
+                  {/* Overlay para mejorar la visibilidad del banner */}
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  
+                  {/* Banner QR con posición y color personalizables */}
+                  <div className={`absolute ${formData.qr_position === 'bottom' ? 'bottom-16' : 'top-0'} left-0 right-0 w-full z-30`}>
+                    <div className={`backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full ${
+                      formData.qr_type === 'payment' 
+                        ? formData.qr_color_payment === 'red'
+                          ? 'bg-red-900/50'
+                          : formData.qr_color_payment === 'green'
+                            ? 'bg-green-900/50'
+                            : formData.qr_color_payment === 'blue'
+                              ? 'bg-blue-900/50'
+                              : formData.qr_color_payment === 'indigo'
+                                ? 'bg-indigo-900/50'
+                                : formData.qr_color_payment === 'pink'
+                                  ? 'bg-pink-900/50'
+                                  : formData.qr_color_payment === 'teal'
+                                    ? 'bg-teal-900/50'
+                                    : formData.qr_color_payment === 'white'
+                                      ? 'bg-white/50'
+                                      : formData.qr_color_payment === 'purple'
+                                        ? 'bg-purple-900/50'
+                                        : 'bg-orange-900/50'
+                        : formData.qr_color_web === 'blue'
+                          ? 'bg-blue-900/50'
+                          : formData.qr_color_web === 'purple'
+                            ? 'bg-purple-900/50'
+                            : 'bg-black/50'
+                    }`}>
+                      <div className="flex-grow flex items-center">
+                        <div className={`bg-white p-2 rounded-xl shadow-lg mr-4 ${
+                          formData.qr_type === 'payment'
+                            ? formData.qr_color_payment === 'red'
+                              ? 'border-2 border-red-400'
+                              : formData.qr_color_payment === 'green'
+                                ? 'border-2 border-green-400'
+                                : formData.qr_color_payment === 'blue'
+                                  ? 'border-2 border-blue-400'
+                                  : formData.qr_color_payment === 'indigo'
+                                    ? 'border-2 border-indigo-400'
+                                    : formData.qr_color_payment === 'pink'
+                                      ? 'border-2 border-pink-400'
+                                      : formData.qr_color_payment === 'teal'
+                                        ? 'border-2 border-teal-400'
+                                        : formData.qr_color_payment === 'white'
+                                          ? 'border-2 border-white'
+                                          : formData.qr_color_payment === 'purple'
+                                            ? 'border-2 border-purple-400'
+                                            : 'border-2 border-orange-400'
+                            : ''
+                        }`}>
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                              formData.qr_type === 'web' 
+                                ? formData.website_url 
+                                : `https://checkout.stripe.com/pay/cs_test_${Math.random().toString(36).substring(2, 10)}?product=${encodeURIComponent(formData.product_name)}&price=${isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price)}&currency=EUR`
+                            )}`}
+                            alt="QR Code"
+                            className="w-16 h-16 rounded-lg"
+                          />
+                        </div>
+                        <div className="text-white">
+                          <h3 className="text-xl font-bold animate-pulse">
+                            {formData.qr_type === 'payment' 
+                              ? `¡VENTA FLASH: ${formData.product_name}!` 
+                              : '¡Escanea para más información!'}
+                          </h3>
+                          <p className="text-sm font-medium">
+                            {formData.qr_type === 'payment' 
+                              ? `${isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price).toFixed(2)}€ - Pago rápido con ${
+                                  formData.payment_provider === 'stripe' ? 'Tarjeta' : 
+                                  formData.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'
+                                }` 
+                              : 'Escanea el código QR o visita nuestra web'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    
-                    {/* Proveedor de pago */}
-                    <div className="bg-slate-700/40 rounded-lg p-3 mb-4">
-                      <p className="text-slate-300 text-sm mb-2">
-                        Pasarela de pago:
-                      </p>
-                      <div className="flex space-x-4">
-                        <div 
-                          className={`flex items-center px-3 py-2 rounded-lg ${
-                            formData.payment_provider === 'stripe' 
-                              ? 'bg-blue-500/20 border border-blue-500/30' 
-                              : 'bg-slate-700/30 border border-slate-600/50'
-                          }`}
-                        >
-                          <span className={`text-sm font-medium ${formData.payment_provider === 'stripe' ? 'text-blue-300' : 'text-slate-400'}`}>
-                            Stripe
-                          </span>
-                        </div>
-                        <div 
-                          className={`flex items-center px-3 py-2 rounded-lg ${
-                            formData.payment_provider === 'googlepay' 
-                              ? 'bg-green-500/20 border border-green-500/30' 
-                              : 'bg-slate-700/30 border border-slate-600/50'
-                          }`}
-                        >
-                          <span className={`text-sm font-medium ${formData.payment_provider === 'googlepay' ? 'text-green-300' : 'text-slate-400'}`}>
-                            Google Pay
-                          </span>
-                        </div>
-                        <div 
-                          className={`flex items-center px-3 py-2 rounded-lg ${
-                            formData.payment_provider === 'applepay' 
-                              ? 'bg-gray-500/20 border border-gray-500/30' 
-                              : 'bg-slate-700/30 border border-slate-600/50'
-                          }`}
-                        >
-                          <span className={`text-sm font-medium ${formData.payment_provider === 'applepay' ? 'text-gray-300' : 'text-slate-400'}`}>
-                            Apple Pay
-                          </span>
-                        </div>
+                      <div className={`ml-4 px-4 py-2 rounded-full border text-white font-bold text-sm animate-pulse ${
+                        formData.qr_type === 'payment'
+                          ? formData.qr_color_payment === 'red'
+                            ? 'bg-red-500/30 border-red-400/50'
+                            : formData.qr_color_payment === 'green'
+                              ? 'bg-green-500/30 border-green-400/50'
+                              : formData.qr_color_payment === 'blue'
+                                ? 'bg-blue-500/30 border-blue-400/50'
+                                : formData.qr_color_payment === 'indigo'
+                                  ? 'bg-indigo-500/30 border-indigo-400/50'
+                                  : formData.qr_color_payment === 'pink'
+                                    ? 'bg-pink-500/30 border-pink-400/50'
+                                    : formData.qr_color_payment === 'teal'
+                                      ? 'bg-teal-500/30 border-teal-400/50'
+                                      : formData.qr_color_payment === 'white'
+                                        ? 'bg-white/30 border-white/50'
+                                        : formData.qr_color_payment === 'purple'
+                                          ? 'bg-purple-500/30 border-purple-400/50'
+                                          : 'bg-orange-500/30 border-orange-400/50'
+                          : 'bg-white/30 border-white/50'
+                      }`}>
+                        {formData.qr_type === 'payment' 
+                          ? 'OFERTA ESPECIAL' 
+                          : 'Más Información'}
                       </div>
                     </div>
                   </div>
                   
-                  {/* Call to action */}
-                  <div className="bg-slate-700/40 rounded-lg p-3">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm text-emerald-400 font-medium">¡Compra rápida en segundos!</p>
-                        <p className="text-xs text-slate-400">Sin registro, pago con un solo clic</p>
-                      </div>
+                  {/* Contenido simulado (solo si no hay media) */}
+                  {!formData.media_url && (
+                    <div className="absolute inset-0 flex items-center justify-center text-white opacity-30 text-2xl font-bold">
+                      {formData.media_type === 'video' ? (
+                        <div className="flex flex-col items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Contenido del Video</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>Contenido de la Imagen</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Indicador de título */}
+                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                    <div className="inline-block px-4 py-2 bg-black/60 rounded-lg text-white text-sm">
+                      {formData.title || "Título del anuncio"}
                     </div>
                   </div>
                 </div>
+                
+                {/* Añadir información adicional */}
+                <div className="mt-3 text-xs text-slate-400 text-center">
+                  Esta vista previa simula cómo se verá el anuncio en la pantalla de visualización
+                </div>
               </div>
-              
-              {/* Pie con instrucciones */}
-              <div className="bg-slate-800/70 py-2 px-4 text-center text-xs text-slate-400">
-                Para probar, escanea el código QR con tu móvil
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
           </div>
         )}
       </div>

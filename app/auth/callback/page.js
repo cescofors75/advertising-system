@@ -21,8 +21,40 @@ export default function AuthCallbackPage() {
         if (data.session) {
           const { data: userData } = await supabase.auth.getUser();
           
-          // Verificar si el usuario tiene permiso
-          if (userData.user.email === 'cescofors75@gmail.com' || userData.user.email === 'info@baco.cat') {
+          // Verificar si el usuario tiene el rol adecuado
+          const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('user_id', userData.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Error al obtener el perfil del usuario:', profileError);
+            // Si no existe un perfil, podemos crear uno con el rol predeterminado 'viewer'
+            if (profileError.code === 'PGRST116') {
+              const { error: insertError } = await supabase
+                .from('user_profiles')
+                .insert({
+                  user_id: userData.user.id,
+                  role: 'viewer', // Rol predeterminado para nuevos usuarios
+                });
+              
+              if (insertError) {
+                throw insertError;
+              }
+              
+              setError('No tienes permiso para acceder al panel de administración.');
+              await supabase.auth.signOut();
+              setTimeout(() => {
+                router.push('/auth/login');
+              }, 3000);
+              return;
+            }
+            throw profileError;
+          }
+          
+          // Verificar el rol del usuario
+          if (profileData && (profileData.role === 'admin' || profileData.role === 'editor')) {
             setMessage('Autenticación exitosa. Redirigiendo...');
             router.push('/admin');
           } else {

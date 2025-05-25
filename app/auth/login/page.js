@@ -21,8 +21,43 @@ export default function LoginPage() {
         const { data: userData } = await supabase.auth.getUser();
         setUser(userData.user);
         
-        // Verificar si el usuario tiene acceso
-        if (userData.user.email === 'cescofors75@gmail.com'|| userData.user.email === 'info@baco.cat') {
+        // Verificar si el usuario tiene el rol adecuado
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', userData.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error('Error al obtener el perfil del usuario:', profileError);
+          // Si no existe un perfil, podemos crear uno con el rol predeterminado 'viewer'
+          if (profileError.code === 'PGRST116') {
+            const { error: insertError } = await supabase
+              .from('user_profiles')
+              .insert({
+                user_id: userData.user.id,
+                role: 'viewer', // Rol predeterminado para nuevos usuarios
+              });
+            
+            if (insertError) {
+              console.error('Error al crear perfil de usuario:', insertError);
+              setError('Error al verificar permisos de usuario.');
+              await supabase.auth.signOut();
+              return;
+            }
+            
+            setError('No tienes permiso para acceder al panel de administración.');
+            await supabase.auth.signOut();
+            return;
+          }
+          
+          setError('Error al verificar permisos de usuario.');
+          await supabase.auth.signOut();
+          return;
+        }
+        
+        // Verificar el rol del usuario
+        if (profileData && (profileData.role === 'admin' || profileData.role === 'editor')) {
           router.push('/admin');
         } else {
           setError('No tienes permiso para acceder al panel de administración.');
@@ -47,8 +82,37 @@ export default function LoginPage() {
       
       if (error) throw error;
       
-      // Verificar si el usuario tiene acceso
-      if (data.user.email === 'cescofors75@gmail.com' || userData.user.email === 'info@baco.cat') {
+      // Verificar si el usuario tiene el rol adecuado
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error al obtener el perfil del usuario:', profileError);
+        // Si no existe un perfil, podemos crear uno con el rol predeterminado 'viewer'
+        if (profileError.code === 'PGRST116') {
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: data.user.id,
+              role: 'viewer', // Rol predeterminado para nuevos usuarios
+            });
+          
+          if (insertError) {
+            throw insertError;
+          }
+          
+          setError('No tienes permiso para acceder al panel de administración.');
+          await supabase.auth.signOut();
+          return;
+        }
+        throw profileError;
+      }
+      
+      // Verificar el rol del usuario
+      if (profileData && (profileData.role === 'admin' || profileData.role === 'editor')) {
         router.push('/admin');
       } else {
         setError('No tienes permiso para acceder al panel de administración.');
