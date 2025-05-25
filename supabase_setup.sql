@@ -9,6 +9,15 @@ CREATE TABLE advertisements (
   media_url TEXT,
   media_type TEXT DEFAULT 'image',
   active BOOLEAN DEFAULT true,
+  website_url TEXT,
+  show_qr_code BOOLEAN DEFAULT false,
+  qr_type TEXT DEFAULT 'web',
+  product_name TEXT,
+  product_price DECIMAL(10, 2),
+  payment_provider TEXT,
+  time_slot_morning BOOLEAN DEFAULT false,
+  time_slot_afternoon BOOLEAN DEFAULT false,
+  time_slot_night BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

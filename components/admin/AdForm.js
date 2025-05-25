@@ -34,7 +34,7 @@ const TIME_SLOTS = {
 };
 
 export default function AdForm({ ad, onCancel, onSubmit }) {
-  const emptyAd = {
+const emptyAd = {
     title: '',
     description: '',
     media_url: null,
@@ -42,11 +42,16 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
     active: true,
     website_url: '',
     show_qr_code: false,
+    qr_type: 'web', // Nuevo campo
+    product_name: '', // Nuevo campo
+    product_price: '', // Nuevo campo
+    payment_provider: 'stripe', // Nuevo campo con Stripe como valor predeterminado
     // Add time slot fields directly to the ad object
     time_slot_morning: false,
     time_slot_afternoon: false,
     time_slot_night: false
   };
+ 
 
   const [formData, setFormData] = useState(ad || emptyAd);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState({
@@ -119,11 +124,16 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
         active: formData.active,
         website_url: formData.website_url,
         show_qr_code: formData.show_qr_code,
+        qr_type: formData.qr_type, // Nuevo campo
+        product_name: formData.product_name, // Nuevo campo
+        product_price: formData.product_price, // Nuevo campo
+        payment_provider: formData.payment_provider, // Nuevo campo
         // Add time slot fields
         time_slot_morning: selectedTimeSlots.morning,
         time_slot_afternoon: selectedTimeSlots.afternoon,
         time_slot_night: selectedTimeSlots.night
       };
+       
       
       console.log("Saving ad with time slots:", adData);
       
@@ -239,22 +249,226 @@ export default function AdForm({ ad, onCancel, onSubmit }) {
           </div>
           <span className="ml-3 text-slate-300 flex items-center">
             <QrCode className="w-4 h-4 mr-2" />
-            Mostrar Código QR en la imagen
+            Mostrar Código QR
           </span>
         </label>
 
-        {formData.show_qr_code && formData.website_url && (
-          <div className="mt-4 p-4 bg-slate-800/50 rounded-xl">
-            <p className="text-sm text-slate-400 mb-3">Vista previa del Código QR:</p>
-            <div className="flex justify-center">
-              <div className="bg-white p-2 rounded-lg">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.website_url)}`}
-                  alt="Código QR"
-                  className="block"
-                />
+        {formData.show_qr_code && (
+          <div className="mt-4 space-y-4">
+            {/* QR Type Selector */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">
+                Tipo de QR
+              </label>
+              <div className="flex space-x-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="qr_type"
+                    value="web"
+                    checked={formData.qr_type === 'web'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`relative w-5 h-5 rounded-full border ${
+                    formData.qr_type === 'web' ? 'border-blue-500 bg-blue-500' : 'border-slate-500'
+                  } flex items-center justify-center`}>
+                    {formData.qr_type === 'web' && (
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    )}
+                  </div>
+                  <span className="ml-2 text-slate-300 flex items-center">
+                    <Globe className="w-4 h-4 mr-1" />
+                    Redirección Web
+                  </span>
+                </label>
+
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="qr_type"
+                    value="payment"
+                    checked={formData.qr_type === 'payment'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`relative w-5 h-5 rounded-full border ${
+                    formData.qr_type === 'payment' ? 'border-emerald-500 bg-emerald-500' : 'border-slate-500'
+                  } flex items-center justify-center`}>
+                    {formData.qr_type === 'payment' && (
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    )}
+                  </div>
+                  <span className="ml-2 text-slate-300 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                      <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                    Pago Directo
+                  </span>
+                </label>
               </div>
             </div>
+
+            {/* URL del sitio web (si qr_type es 'web') */}
+            {formData.qr_type === 'web' && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="website_url">
+                  URL del Sitio Web
+                </label>
+                <input
+                  id="website_url"
+                  name="website_url"
+                  type="url"
+                  value={formData.website_url || ""}
+                  onChange={handleChange}
+                  className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="https://ejemplo.com"
+                />
+              </div>
+            )}
+
+            {/* Campos adicionales para pago (si qr_type es 'payment') */}
+            {formData.qr_type === 'payment' && (
+              <div className="space-y-4 p-4 bg-slate-800/50 rounded-xl">
+                <h3 className="text-lg font-semibold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">
+                  Configuración de Pago
+                </h3>
+
+                {/* Nombre del Producto */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="product_name">
+                    Nombre del Producto
+                  </label>
+                  <input
+                    id="product_name"
+                    name="product_name"
+                    type="text"
+                    value={formData.product_name || ""}
+                    onChange={handleChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    placeholder="Ej: Ticket Evento VIP"
+                  />
+                </div>
+
+                {/* Precio del Producto */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2" htmlFor="product_price">
+                    Precio (€)
+                  </label>
+                  <input
+                    id="product_price"
+                    name="product_price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.product_price || ""}
+                    onChange={handleChange}
+                    className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    placeholder="19.99"
+                  />
+                </div>
+
+                {/* Proveedor de Pago */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Método de Pago
+                  </label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <label className={`relative flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer border-2 transition-all ${formData.payment_provider === 'stripe' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'}`}>
+                      <input
+                        type="radio"
+                        name="payment_provider"
+                        value="stripe"
+                        checked={formData.payment_provider === 'stripe'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <svg className="w-8 h-8 mb-2" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M35 5H5V35H35V5Z" fill="#6772E5"/>
+                        <path d="M20 22.5C20 19.46 22.46 17 25.5 17C28.54 17 31 19.46 31 22.5C31 25.54 28.54 28 25.5 28C22.46 28 20 25.54 20 22.5Z" fill="white"/>
+                        <path d="M13 17.5H9V28H13V17.5Z" fill="white"/>
+                        <path d="M17 12H13V16H17V12Z" fill="white"/>
+                      </svg>
+                      <span className={`text-sm font-medium ${formData.payment_provider === 'stripe' ? 'text-white' : 'text-slate-300'}`}>Stripe</span>
+                    </label>
+
+                    <label className={`relative flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer border-2 transition-all ${formData.payment_provider === 'googlepay' ? 'border-green-500 bg-green-500/10' : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'}`}>
+                      <input
+                        type="radio"
+                        name="payment_provider"
+                        value="googlepay"
+                        checked={formData.payment_provider === 'googlepay'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <svg className="w-8 h-8 mb-2" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#000"/>
+                        <path d="M20 28C24.4183 28 28 24.4183 28 20C28 15.5817 24.4183 12 20 12C15.5817 12 12 15.5817 12 20C12 24.4183 15.5817 28 20 28Z" fill="#FEFEFE"/>
+                        <path d="M20 24C22.2091 24 24 22.2091 24 20C24 17.7909 22.2091 16 20 16C17.7909 16 16 17.7909 16 20C16 22.2091 17.7909 24 20 24Z" fill="#5F6368"/>
+                      </svg>
+                      <span className={`text-sm font-medium ${formData.payment_provider === 'googlepay' ? 'text-white' : 'text-slate-300'}`}>Google Pay</span>
+                    </label>
+
+                    <label className={`relative flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer border-2 transition-all ${formData.payment_provider === 'applepay' ? 'border-gray-300 bg-gray-500/10' : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'}`}>
+                      <input
+                        type="radio"
+                        name="payment_provider"
+                        value="applepay"
+                        checked={formData.payment_provider === 'applepay'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <svg className="w-8 h-8 mb-2" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#000"/>
+                        <path d="M25.14 14.16C24.54 14.89 23.56 15.47 22.58 15.38C22.42 14.4 22.9 13.35 23.46 12.71C24.06 11.98 25.1 11.43 26 11.37C26.14 12.38 25.74 13.43 25.14 14.16ZM26 15.85C24.56 15.77 23.26 16.6 22.52 16.6C21.78 16.6 20.68 15.89 19.54 15.91C18.08 15.93 16.74 16.74 16 18.01C14.48 20.57 15.62 24.33 17.08 26.38C17.8 27.39 18.66 28.5 19.78 28.48C20.86 28.46 21.28 27.8 22.58 27.8C23.88 27.8 24.26 28.48 25.4 28.47C26.58 28.46 27.32 27.46 28.04 26.44C28.86 25.29 29.2 24.17 29.22 24.09C29.2 24.05 27.22 23.31 27.2 21.12C27.18 19.27 28.76 18.38 28.84 18.32C27.8 16.8 26.18 16.67 25.6 16.63C24.56 16.56 23.62 17.09 23.04 17.09C22.42 17.09 21.62 16.63 20.74 16.63C20.74 16.63 20.74 16.63 20.74 16.63H26V15.85Z" fill="white"/>
+                      </svg>
+                      <span className={`text-sm font-medium ${formData.payment_provider === 'applepay' ? 'text-white' : 'text-slate-300'}`}>Apple Pay</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Vista previa del QR actualizada para mostrar información de pago */}
+            {((formData.qr_type === 'web' && formData.website_url) || 
+              (formData.qr_type === 'payment' && formData.product_name && formData.product_price)) && (
+              <div className="mt-4 p-4 bg-slate-800/50 rounded-xl">
+                <p className="text-sm text-slate-400 mb-3">Vista previa del Código QR:</p>
+                <div className={`flex ${formData.qr_type === 'payment' ? 'justify-between' : 'justify-center'} items-center`}>
+                  <div className={`bg-white p-2 rounded-lg ${formData.qr_type === 'payment' ? 'border-2 border-emerald-500' : ''}`}>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                        formData.qr_type === 'web' 
+                          ? formData.website_url 
+                          : `https://checkout.stripe.com/pay/cs_test_${Math.random().toString(36).substring(2, 10)}?product=${encodeURIComponent(formData.product_name)}&price=${isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price)}&currency=EUR`
+                      )}`}
+                      alt="Código QR"
+                      className="block w-32 h-32"
+                    />
+                  </div>
+                  
+                  {formData.qr_type === 'payment' && formData.product_name && formData.product_price && (
+                    <div className="ml-4 p-4 bg-slate-700/50 rounded-xl max-w-xs">
+                      <h4 className="text-lg font-bold text-emerald-400 mb-2">{formData.product_name}</h4>
+                      <div className="flex items-center">
+                        <span className="text-2xl font-bold text-white">{isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price).toFixed(2)}€</span>
+                        <span className="ml-2 px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/30">
+                          Pago Rápido
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-400 mt-2">
+                        Pasarela de pago: 
+                        <span className="ml-1 font-medium text-slate-300">
+                          {formData.payment_provider === 'stripe' ? 'Stripe' : 
+                           formData.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

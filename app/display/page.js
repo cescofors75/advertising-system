@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import supabase from "@/lib/supabaseClient";
+import { generatePaymentUrl, getPromotionalMessage } from "@/lib/paymentUtils";
 
 // Brand colors
 const ORANGE = "#ff8000";
@@ -1570,24 +1571,51 @@ export default function DisplayPage() {
                       {/* Banner-style QR Code for video at the top */}
                       {currentAdIndex.website_url && currentAdIndex.show_qr_code && (
                         <div className="absolute top-0 left-0 right-0 w-full z-30">
-                          <div className="bg-black/50 backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full">
+                          <div className={`backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full ${
+                            currentAdIndex.qr_type === 'payment' ? 'bg-emerald-900/50' : 'bg-black/50'
+                          }`}>
                             <div className="flex-grow flex items-center">
-                              <div className="bg-white p-2 rounded-xl shadow-lg mr-4">
+                              <div className={`bg-white p-2 rounded-xl shadow-lg mr-4 ${
+                                currentAdIndex.qr_type === 'payment' ? 'border-2 border-emerald-400' : ''
+                              }`}>
                                 <img
                                   src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
-                                    currentAdIndex.website_url
+                                    currentAdIndex.qr_type === 'web' 
+                                      ? currentAdIndex.website_url 
+                                      : generatePaymentUrl(
+                                          currentAdIndex.payment_provider,
+                                          currentAdIndex.product_name,
+                                          currentAdIndex.product_price
+                                        )
                                   )}`}
                                   alt="QR Code"
                                   className="w-16 h-16 rounded-lg"
                                 />
                               </div>
                               <div className="text-white">
-                                <h3 className="text-xl font-bold animate-pulse">¡Compra Tickets Ahora!</h3>
-                                <p className="text-sm font-medium">Escanea el código QR o visita nuestra web</p>
+                                <h3 className="text-xl font-bold animate-pulse">
+                                  {currentAdIndex.qr_type === 'payment' 
+                                    ? `¡Compra ${currentAdIndex.product_name} Ahora!` 
+                                    : '¡Escanea para más información!'}
+                                </h3>
+                                <p className="text-sm font-medium">
+                                  {currentAdIndex.qr_type === 'payment' 
+                                    ? `${isNaN(parseFloat(currentAdIndex.product_price)) ? "0.00" : parseFloat(currentAdIndex.product_price).toFixed(2)}€ - Pago rápido con ${
+                                        currentAdIndex.payment_provider === 'stripe' ? 'Tarjeta' : 
+                                        currentAdIndex.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'
+                                      }` 
+                                    : 'Escanea el código QR o visita nuestra web'}
+                                </p>
                               </div>
                             </div>
-                            <div className="ml-4 px-4 py-2 bg-white/30 rounded-full border border-white/50 text-white font-bold text-sm animate-pulse">
-                              Oferta Limitada
+                            <div className={`ml-4 px-4 py-2 rounded-full border text-white font-bold text-sm animate-pulse ${
+                              currentAdIndex.qr_type === 'payment' 
+                                ? 'bg-emerald-500/30 border-emerald-400/50' 
+                                : 'bg-white/30 border-white/50'
+                            }`}>
+                              {currentAdIndex.qr_type === 'payment' 
+                                ? getPromotionalMessage(currentAdIndex.product_price)
+                                : 'Más Información'}
                             </div>
                           </div>
                         </div>
@@ -1673,26 +1701,46 @@ export default function DisplayPage() {
       {/* Toast-style QR Code */}
       {currentAdIndex && currentAdIndex.website_url && currentAdIndex.show_qr_code && currentAdIndex.media_type === "image" && (
         <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 animate-fade-in-up">
-          <div className="flex items-center space-x-4 bg-black/40 backdrop-blur-md rounded-full py-2 px-4 shadow-2xl border border-white/10">
+          <div className={`flex items-center space-x-4 backdrop-blur-md rounded-full py-3 px-6 shadow-2xl border ${
+            currentAdIndex.qr_type === 'payment' 
+              ? 'bg-emerald-900/40 border-emerald-500/30' 
+              : 'bg-black/40 border-white/10'
+          }`}>
             <div className="flex items-center">
-              <div className="bg-white/95 p-2 rounded-xl mr-3">
+              <div className={`bg-white/95 p-2 rounded-xl mr-3 ${
+                currentAdIndex.qr_type === 'payment' ? 'border-2 border-emerald-400' : ''
+              }`}>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    currentAdIndex.website_url
+                    currentAdIndex.qr_type === 'web' 
+                      ? currentAdIndex.website_url 
+                      : generatePaymentUrl(
+                          currentAdIndex.payment_provider,
+                          currentAdIndex.product_name,
+                          currentAdIndex.product_price
+                        )
                   )}`}
                   alt="QR Code"
                   className="w-14 h-14 rounded-lg"
                 />
               </div>
               <div className="text-white">
-                <p className="font-semibold text-sm">¿Quieres más información?</p>
-                <p className="text-xs opacity-80">Escanea el código QR con tu móvil</p>
+                {currentAdIndex.qr_type === 'payment' ? (
+                  <>
+              <p className="font-semibold text-emerald-300">
+                {currentAdIndex.product_name} - {isNaN(parseFloat(currentAdIndex.product_price)) ? "0.00" : parseFloat(currentAdIndex.product_price).toFixed(2)}€
+              </p>
+                    <p className="text-xs opacity-80">
+                      Escanea para pagar con {
+                        currentAdIndex.payment_provider === 'stripe' ? 'Tarjeta' : 
+                        currentAdIndex.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'
+                      }
+                    </p>
+                  </>
+                ) : (
+                  <p className="font-medium">Escanea para más información</p>
+                )}
               </div>
-            </div>
-            <div className="bg-white/20 rounded-full h-8 w-8 flex items-center justify-center animate-pulse">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
             </div>
           </div>
         </div>
