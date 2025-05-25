@@ -1633,6 +1633,58 @@ export default function DisplayPage() {
                       </div>
                       {/* Premium QR Code */}
                       {/* Empty div to maintain layout */}
+                      {/* QR Code for images - Banner Style at the top with orange tones */}
+                      {currentAdIndex && currentAdIndex.website_url && currentAdIndex.show_qr_code && (
+                        <div className="absolute top-0 left-0 right-0 w-full z-30">
+                          <div className={`backdrop-blur-md p-3 flex items-center justify-between shadow-xl w-full ${
+                            currentAdIndex.qr_type === 'payment' ? 'bg-orange-900/50' : 'bg-black/50'
+                          }`}>
+                            <div className="flex-grow flex items-center">
+                              <div className={`bg-white p-2 rounded-xl shadow-lg mr-4 ${
+                                currentAdIndex.qr_type === 'payment' ? 'border-2 border-orange-400' : ''
+                              }`}>
+                                <img
+                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                                    currentAdIndex.qr_type === 'web' 
+                                      ? currentAdIndex.website_url 
+                                      : generatePaymentUrl(
+                                          currentAdIndex.payment_provider,
+                                          currentAdIndex.product_name,
+                                          currentAdIndex.product_price
+                                        )
+                                  )}`}
+                                  alt="QR Code"
+                                  className="w-16 h-16 rounded-lg"
+                                />
+                              </div>
+                              <div className="text-white">
+                                <h3 className="text-xl font-bold animate-pulse">
+                                  {currentAdIndex.qr_type === 'payment' 
+                                    ? `¡VENTA FLASH: ${currentAdIndex.product_name}!` 
+                                    : '¡Escanea para más información!'}
+                                </h3>
+                                <p className="text-sm font-medium">
+                                  {currentAdIndex.qr_type === 'payment' 
+                                    ? `${isNaN(parseFloat(currentAdIndex.product_price)) ? "0.00" : parseFloat(currentAdIndex.product_price).toFixed(2)}€ - Pago rápido con ${
+                                        currentAdIndex.payment_provider === 'stripe' ? 'Tarjeta' : 
+                                        currentAdIndex.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'
+                                      }` 
+                                    : 'Escanea el código QR o visita nuestra web'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className={`ml-4 px-4 py-2 rounded-full border text-white font-bold text-sm animate-pulse ${
+                              currentAdIndex.qr_type === 'payment' 
+                                ? 'bg-orange-500/30 border-orange-400/50' 
+                                : 'bg-white/30 border-white/50'
+                            }`}>
+                              {currentAdIndex.qr_type === 'payment' 
+                                ? getPromotionalMessage(currentAdIndex.product_price)
+                                : 'Más Información'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 ) : (
@@ -1698,53 +1750,6 @@ export default function DisplayPage() {
         )}
       </div>
 
-      {/* Toast-style QR Code */}
-      {currentAdIndex && currentAdIndex.website_url && currentAdIndex.show_qr_code && currentAdIndex.media_type === "image" && (
-        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-40 animate-fade-in-up">
-          <div className={`flex items-center space-x-4 backdrop-blur-md rounded-full py-3 px-6 shadow-2xl border ${
-            currentAdIndex.qr_type === 'payment' 
-              ? 'bg-emerald-900/40 border-emerald-500/30' 
-              : 'bg-black/40 border-white/10'
-          }`}>
-            <div className="flex items-center">
-              <div className={`bg-white/95 p-2 rounded-xl mr-3 ${
-                currentAdIndex.qr_type === 'payment' ? 'border-2 border-emerald-400' : ''
-              }`}>
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    currentAdIndex.qr_type === 'web' 
-                      ? currentAdIndex.website_url 
-                      : generatePaymentUrl(
-                          currentAdIndex.payment_provider,
-                          currentAdIndex.product_name,
-                          currentAdIndex.product_price
-                        )
-                  )}`}
-                  alt="QR Code"
-                  className="w-14 h-14 rounded-lg"
-                />
-              </div>
-              <div className="text-white">
-                {currentAdIndex.qr_type === 'payment' ? (
-                  <>
-              <p className="font-semibold text-emerald-300">
-                {currentAdIndex.product_name} - {isNaN(parseFloat(currentAdIndex.product_price)) ? "0.00" : parseFloat(currentAdIndex.product_price).toFixed(2)}€
-              </p>
-                    <p className="text-xs opacity-80">
-                      Escanea para pagar con {
-                        currentAdIndex.payment_provider === 'stripe' ? 'Tarjeta' : 
-                        currentAdIndex.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'
-                      }
-                    </p>
-                  </>
-                ) : (
-                  <p className="font-medium">Escanea para más información</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Premium Footer */}
       <footer className="relative z-20 py-2 px-6 bg-black/80 backdrop-blur-md">

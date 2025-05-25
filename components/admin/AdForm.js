@@ -430,45 +430,139 @@ const emptyAd = {
               </div>
             )}
 
-            {/* Vista previa del QR actualizada para mostrar información de pago */}
-            {((formData.qr_type === 'web' && formData.website_url) || 
-              (formData.qr_type === 'payment' && formData.product_name && formData.product_price)) && (
-              <div className="mt-4 p-4 bg-slate-800/50 rounded-xl">
-                <p className="text-sm text-slate-400 mb-3">Vista previa del Código QR:</p>
-                <div className={`flex ${formData.qr_type === 'payment' ? 'justify-between' : 'justify-center'} items-center`}>
-                  <div className={`bg-white p-2 rounded-lg ${formData.qr_type === 'payment' ? 'border-2 border-emerald-500' : ''}`}>
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                        formData.qr_type === 'web' 
-                          ? formData.website_url 
-                          : `https://checkout.stripe.com/pay/cs_test_${Math.random().toString(36).substring(2, 10)}?product=${encodeURIComponent(formData.product_name)}&price=${isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price)}&currency=EUR`
-                      )}`}
-                      alt="Código QR"
-                      className="block w-32 h-32"
-                    />
-                  </div>
-                  
-                  {formData.qr_type === 'payment' && formData.product_name && formData.product_price && (
-                    <div className="ml-4 p-4 bg-slate-700/50 rounded-xl max-w-xs">
-                      <h4 className="text-lg font-bold text-emerald-400 mb-2">{formData.product_name}</h4>
-                      <div className="flex items-center">
-                        <span className="text-2xl font-bold text-white">{isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price).toFixed(2)}€</span>
-                        <span className="ml-2 px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/30">
-                          Pago Rápido
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-400 mt-2">
-                        Pasarela de pago: 
-                        <span className="ml-1 font-medium text-slate-300">
-                          {formData.payment_provider === 'stripe' ? 'Stripe' : 
-                           formData.payment_provider === 'googlepay' ? 'Google Pay' : 'Apple Pay'}
-                        </span>
-                      </p>
-                    </div>
-                  )}
+      {/* Vista previa del QR actualizada para mostrar información de pago */}
+      {((formData.qr_type === 'web' && formData.website_url) || 
+        (formData.qr_type === 'payment' && formData.product_name && formData.product_price)) && (
+        <div className="mt-4 bg-slate-800/50 rounded-xl overflow-hidden">
+          {formData.qr_type === 'web' ? (
+            // Vista previa para QR de web (mantener diseño actual)
+            <div className="p-4">
+              <p className="text-sm text-slate-400 mb-3">Vista previa del Código QR:</p>
+              <div className="flex justify-center">
+                <div className="bg-white p-2 rounded-lg">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                      formData.website_url
+                    )}`}
+                    alt="Código QR"
+                    className="block w-32 h-32"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          ) : (
+            // Vista previa profesional para QR de pago con estilo "Hot Sell Power"
+            <div>
+              {/* Banner superior con degradado */}
+              <div className="bg-gradient-to-r from-emerald-600 to-blue-600 py-2 px-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-bold uppercase text-sm tracking-wider">Venta Flash</span>
+                  <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full animate-pulse">PAGO DIRECTO</span>
+                </div>
+              </div>
+              
+              {/* Contenido principal con diseño profesional */}
+              <div className="p-6 flex flex-col md:flex-row items-center md:items-stretch gap-6">
+                {/* QR con borde animado */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-emerald-500 rounded-lg opacity-75 blur animate-pulse"></div>
+                  <div className="relative bg-white p-3 rounded-lg">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                        `https://checkout.stripe.com/pay/cs_test_${Math.random().toString(36).substring(2, 10)}?product=${encodeURIComponent(formData.product_name)}&price=${isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price)}&currency=EUR`
+                      )}`}
+                      alt="Código QR"
+                      className="block w-44 h-44"
+                    />
+                  </div>
+                </div>
+                
+                {/* Información del producto */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400 mb-2">
+                      {formData.product_name}
+                    </h3>
+                    
+                    {/* Precio con badge de oferta */}
+                    <div className="flex items-center mb-4">
+                      <span className="text-3xl font-bold text-white">{isNaN(parseFloat(formData.product_price)) ? "0.00" : parseFloat(formData.product_price).toFixed(2)}€</span>
+                      <div className="ml-3 flex flex-col">
+                        <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/30">
+                          OFERTA ESPECIAL
+                        </span>
+                        <span className="text-slate-400 text-xs mt-1">Escaneando este QR</span>
+                      </div>
+                    </div>
+                    
+                    {/* Proveedor de pago */}
+                    <div className="bg-slate-700/40 rounded-lg p-3 mb-4">
+                      <p className="text-slate-300 text-sm mb-2">
+                        Pasarela de pago:
+                      </p>
+                      <div className="flex space-x-4">
+                        <div 
+                          className={`flex items-center px-3 py-2 rounded-lg ${
+                            formData.payment_provider === 'stripe' 
+                              ? 'bg-blue-500/20 border border-blue-500/30' 
+                              : 'bg-slate-700/30 border border-slate-600/50'
+                          }`}
+                        >
+                          <span className={`text-sm font-medium ${formData.payment_provider === 'stripe' ? 'text-blue-300' : 'text-slate-400'}`}>
+                            Stripe
+                          </span>
+                        </div>
+                        <div 
+                          className={`flex items-center px-3 py-2 rounded-lg ${
+                            formData.payment_provider === 'googlepay' 
+                              ? 'bg-green-500/20 border border-green-500/30' 
+                              : 'bg-slate-700/30 border border-slate-600/50'
+                          }`}
+                        >
+                          <span className={`text-sm font-medium ${formData.payment_provider === 'googlepay' ? 'text-green-300' : 'text-slate-400'}`}>
+                            Google Pay
+                          </span>
+                        </div>
+                        <div 
+                          className={`flex items-center px-3 py-2 rounded-lg ${
+                            formData.payment_provider === 'applepay' 
+                              ? 'bg-gray-500/20 border border-gray-500/30' 
+                              : 'bg-slate-700/30 border border-slate-600/50'
+                          }`}
+                        >
+                          <span className={`text-sm font-medium ${formData.payment_provider === 'applepay' ? 'text-gray-300' : 'text-slate-400'}`}>
+                            Apple Pay
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Call to action */}
+                  <div className="bg-slate-700/40 rounded-lg p-3">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-emerald-400 font-medium">¡Compra rápida en segundos!</p>
+                        <p className="text-xs text-slate-400">Sin registro, pago con un solo clic</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Pie con instrucciones */}
+              <div className="bg-slate-800/70 py-2 px-4 text-center text-xs text-slate-400">
+                Para probar, escanea el código QR con tu móvil
+              </div>
+            </div>
+          )}
+        </div>
+      )}
           </div>
         )}
       </div>
