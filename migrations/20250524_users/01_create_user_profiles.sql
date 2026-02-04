@@ -88,14 +88,19 @@ CREATE POLICY users_update_own_profile
 CREATE OR REPLACE FUNCTION check_role_change()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF OLD.role != NEW.role AND 
+    -- Permitir cambios si:
+    -- 1. No hay sesión autenticada (scripts SQL desde editor) - auth.uid() IS NULL
+    -- 2. El usuario autenticado es admin
+    -- 3. El rol no ha cambiado
+    IF OLD.role != NEW.role AND
+       auth.uid() IS NOT NULL AND
        NOT EXISTS (SELECT 1 FROM user_profiles up WHERE up.user_id = auth.uid() AND up.role = 'admin')
     THEN
         RAISE EXCEPTION 'No tienes permiso para cambiar tu rol';
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Crear trigger para prevenir cambios no autorizados al rol
 DROP TRIGGER IF EXISTS prevent_role_change ON user_profiles;
