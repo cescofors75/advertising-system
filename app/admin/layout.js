@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
-import deviceService from "@/lib/deviceService";
 import {
   LayoutDashboard,
   Users,
@@ -15,6 +14,7 @@ import {
   Monitor,
   Palette,
   Car,
+  Activity,
 } from "lucide-react";
 
 
@@ -25,7 +25,6 @@ export default function AdminLayout({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showUserTooltip, setShowUserTooltip] = useState(false);
-  const [onlineDevicesCount, setOnlineDevicesCount] = useState(0);
   const router = useRouter();
 
   // Obtener información del usuario
@@ -80,41 +79,7 @@ export default function AdminLayout({ children }) {
     getUserInfo();
   }, []);
 
-  // Obtener conteo de dispositivos online
-  // Obtener conteo de dispositivos online
-useEffect(() => {
-  const fetchOnlineDevicesCount = async () => {
-    try {
-      const count = await deviceService.getOnlineDevicesCount();
-      setOnlineDevicesCount(count);
-    } catch (err) {
-      console.error("Error al obtener dispositivos online:", err);
-    }
-  };
 
-  // Fetch inicial
-  fetchOnlineDevicesCount();
-
-  // Actualizar cada UPDATE_INTERVAL_SECONDS segundos
-  const interval = setInterval(fetchOnlineDevicesCount, deviceService.UPDATE_INTERVAL_SECONDS * 1000);
-
-  // Configurar suscripción realtime para actualizaciones instantáneas
-  const channel = supabase
-    .channel('devices-count-layout')
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'connected_devices' }, 
-      () => {
-        // Cuando hay cambios, actualizar el conteo
-        fetchOnlineDevicesCount();
-      }
-    )
-    .subscribe();
-
-  return () => {
-    clearInterval(interval);
-    supabase.removeChannel(channel);
-  };
-}, []);
 
   const handleLogout = async () => {
     try {
@@ -170,6 +135,17 @@ useEffect(() => {
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     Anuncios
                   </Link>
+                  <Link
+                    href="/admin/realtime"
+                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      pathname === "/admin/realtime"
+                        ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <Activity className="w-4 h-4 mr-2" />
+                    Realtime
+                  </Link>
                    <Link
                     href="/display"
                     target="_blank"
@@ -208,11 +184,6 @@ useEffect(() => {
                   >
                     <Car className="w-4 h-4 mr-2" />
                     Cars
-                    {onlineDevicesCount > 0 && (
-                      <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-500 text-white">
-                        {onlineDevicesCount}
-                      </span>
-                    )}
                   </Link>*/}
                 </div>
               </div>
@@ -303,11 +274,6 @@ useEffect(() => {
             >
               <Car className="w-4 h-4 mr-2" />
               Cars
-              {onlineDevicesCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-500 text-white">
-                  {onlineDevicesCount}
-                </span>
-              )}
             </Link>
           </div>
         </div>

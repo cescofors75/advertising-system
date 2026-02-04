@@ -300,6 +300,7 @@ function isDeviceOnline(lastSeenDate) {
             console.log('🎯 SYNC EVENT TRIGGERED!');
             const state = devicePresence.presenceState();
             console.log('👥 Presence sync - Full state keys:', Object.keys(state));
+            console.log('🔍 Realtime raw state:', JSON.stringify(state, null, 2));
             
             // Actualizar estado de los dispositivos basado en presence
             const onlineDeviceIds = new Set();
@@ -309,14 +310,18 @@ function isDeviceOnline(lastSeenDate) {
             Object.entries(state).forEach(([presenceKey, presences]) => {
               // presences es un array de payloads para esta key
               presences.forEach(presence => {
+                console.log('🔍 Realtime presence:', presence);
                 // Solo procesar si tiene device_id y no es admin
                 if (presence.device_id && presence.type !== 'admin') {
+                  console.log('✅ Realtime adding device:', presence.device_id);
                   onlineDeviceIds.add(presence.device_id);
                   onlineDevicesData.push({
                     id: presence.device_id,
                     status: 'online',
                     last_seen: presence.online_at || new Date().toISOString()
                   });
+                } else {
+                  console.log('❌ Realtime filtering out:', presence.device_id, 'type:', presence.type);
                 }
               });
             });
@@ -366,12 +371,64 @@ function isDeviceOnline(lastSeenDate) {
           })
           .on('presence', { event: 'join' }, ({ key, newPresences }) => {
             if (!isMounted) return;
-            console.log('🟢 Device joined - Key:', key);
-            // La lógica compleja se maneja en sync
+            console.log('🟢 Device joined - Key:', key, 'Presences:', newPresences);
+            
+            // Actualizar estado después del join
+            const state = devicePresence.presenceState();
+            const onlineDeviceIds = new Set();
+            
+            Object.values(state).forEach((presences) => {
+              presences.forEach((presence) => {
+                if (presence.device_id && presence.type !== 'admin') {
+                  onlineDeviceIds.add(presence.device_id);
+                }
+              });
+            });
+            
+            console.log(`📊 After join: ${onlineDeviceIds.size} devices online`, Array.from(onlineDeviceIds));
+            
+            setDevices(prevDevices => 
+              prevDevices.map(device => ({
+                ...device,
+                status: onlineDeviceIds.has(device.id) ? 'online' : device.status
+              }))
+            );
+            
+            setStats(prev => ({
+              ...prev,
+              onlineDevices: onlineDeviceIds.size
+            }));
           })
           .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
             if (!isMounted) return;
-            console.log('🔴 Device left - Key:', key);
+            console.log('🔴 Device left - Key:', key, 'Presences:', leftPresences);
+            
+            // Actualizar estado después del leave
+            const state = devicePresence.presenceState();
+            const onlineDeviceIds = new Set();
+            
+            Object.values(state).forEach((presences) => {
+              presences.forEach((presence) => {
+                if (presence.device_id && presence.type !== 'admin') {
+                  onlineDeviceIds.add(presence.device_id);
+                }
+              });
+            });
+            
+            console.log(`📊 After leave: ${onlineDeviceIds.size} devices online`, Array.from(onlineDeviceIds));
+            
+            setDevices(prevDevices => 
+              prevDevices.map(device => ({
+                ...device,
+                status: onlineDeviceIds.has(device.id) ? 'online' : 'offline',
+                last_seen: onlineDeviceIds.has(device.id) ? new Date().toISOString() : device.last_seen
+              }))
+            );
+            
+            setStats(prev => ({
+              ...prev,
+              onlineDevices: onlineDeviceIds.size
+            }));
           });
 
         // Suscribirse al canal usando el patrón estándar
