@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   // Usar la API de cookies de manera asíncrona
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
   
   try {
@@ -71,7 +71,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   // Usar la API de cookies de manera asíncrona
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
   
   try {

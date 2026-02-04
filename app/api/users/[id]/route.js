@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 export async function PATCH(request, { params }) {
   // Usar la API de cookies de manera asíncrona
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
   const { id } = params;
   
@@ -56,7 +56,7 @@ export async function PATCH(request, { params }) {
 
 export async function POST(request, { params }) {
   // Usar la API de cookies de manera asíncrona
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
   const { id } = params;
   
