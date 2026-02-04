@@ -266,7 +266,29 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <div className="mt-8 text-center">
+        {/* Demo Users Section */}
+        <div className="mt-6 bg-slate-800/50 backdrop-blur py-4 px-6 rounded-xl border border-slate-700/50">
+          <div className="flex items-center justify-center mb-3">
+            <Shield className="w-4 h-4 text-blue-400 mr-2" />
+            <h3 className="text-sm font-semibold text-slate-300">Usuarios de Demo</h3>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between items-center py-2 px-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <span className="text-purple-300 font-medium">Admin:</span>
+              <code className="text-slate-300">admin@demo.com / demo123</code>
+            </div>
+            <div className="flex justify-between items-center py-2 px-3 bg-green-500/10 rounded-lg border border-green-500/20">
+              <span className="text-green-300 font-medium">Editor:</span>
+              <code className="text-slate-300">editor@demo.com / demo123</code>
+            </div>
+            <div className="flex justify-between items-center py-2 px-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <span className="text-blue-300 font-medium">Viewer:</span>
+              <code className="text-slate-300">viewer@demo.com / demo123</code>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
           <p className="text-slate-400 text-xs flex items-center justify-center">
             <Shield className="w-3 h-3 mr-1" />
             Developed on the Costa Brava by VisitToo & VisitTech

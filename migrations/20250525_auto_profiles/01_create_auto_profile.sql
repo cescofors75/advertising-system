@@ -30,8 +30,23 @@ ON CONFLICT (user_id) DO NOTHING;
 UPDATE public.user_profiles
 SET role = 'admin'
 WHERE user_id IN (
-  SELECT id FROM auth.users 
-  WHERE email = 'cescofors75@gmail.com' OR email = 'info@baco.cat'
+  SELECT id FROM auth.users
+  WHERE email = 'cescofors75@gmail.com' OR email = 'info@baco.cat' OR email = 'admin@demo.com'
 )
 AND role != 'admin';
+
+-- Asignar roles a usuarios de demo si existen
+UPDATE public.user_profiles
+SET role = 'editor', first_name = 'Editor', last_name = 'Demo'
+WHERE user_id IN (
+  SELECT id FROM auth.users WHERE email = 'editor@demo.com'
+)
+AND role != 'editor';
+
+UPDATE public.user_profiles
+SET role = 'viewer', first_name = 'Viewer', last_name = 'Demo'
+WHERE user_id IN (
+  SELECT id FROM auth.users WHERE email = 'viewer@demo.com'
+)
+AND role != 'viewer';
 
