@@ -1,10 +1,18 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Car, Euro, TrendingUp, AlertCircle, Target, Monitor, Server, Code } from 'lucide-react';
+import supabase from '@/lib/supabaseClient';
 
 export default function TaxiAdsBusinessModel() {
+  const router = useRouter();
+
+  // Estados de autenticación
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+
   // Estados para todos los parámetros editables
   const [numTaxis, setNumTaxis] = useState(30);
   const [costePorTaxi, setCostePorTaxi] = useState(200);
@@ -19,6 +27,54 @@ export default function TaxiAdsBusinessModel() {
   const [costeServidor, setCosteServidor] = useState(150);
   const [costePantalla, setCostePantalla] = useState(250);
   const [proyeccionAnios, setProyeccionAnios] = useState(3);
+
+  // Verificar permisos de admin
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.push('/auth/login');
+          return;
+        }
+
+        const { data: profileData, error } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !profileData || profileData.role !== 'admin') {
+          alert('Esta página solo está disponible para administradores');
+          router.push('/admin');
+          return;
+        }
+
+        setHasAccess(true);
+      } catch (error) {
+        console.error('Error al verificar permisos:', error);
+        router.push('/admin');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAdminAccess();
+  }, [router]);
+
+  // Si está cargando o no tiene acceso, mostrar loading o nada
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-white text-xl">Verificando permisos...</div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return null;
+  }
 
   // Cálculos automáticos
   const costePantallasTotal = numTaxis * costePantalla;
