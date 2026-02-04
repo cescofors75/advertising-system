@@ -232,10 +232,6 @@ export default function LoginPage() {
               <span className="text-green-300 font-medium">Editor:</span>
               <code className="text-slate-300">editor@demo.com / demo123</code>
             </div>
-            <div className="flex justify-between items-center py-2 px-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <span className="text-blue-300 font-medium">Viewer:</span>
-              <code className="text-slate-300">viewer@demo.com / demo123</code>
-            </div>
           </div>
         </div>
 

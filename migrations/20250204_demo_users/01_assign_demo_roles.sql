@@ -28,19 +28,6 @@ DO UPDATE SET
   is_active = TRUE,
   updated_at = NOW();
 
--- Asignar rol de viewer al usuario viewer@demo.com
-INSERT INTO user_profiles (user_id, first_name, last_name, role, is_active)
-SELECT id, 'Viewer', 'Demo', 'viewer', TRUE
-FROM auth.users
-WHERE email = 'viewer@demo.com'
-ON CONFLICT (user_id)
-DO UPDATE SET
-  role = 'viewer',
-  first_name = 'Viewer',
-  last_name = 'Demo',
-  is_active = TRUE,
-  updated_at = NOW();
-
 -- Verificar que se crearon correctamente
 SELECT
   au.email,
@@ -50,4 +37,4 @@ SELECT
   up.is_active
 FROM auth.users au
 LEFT JOIN user_profiles up ON au.id = up.user_id
-WHERE au.email IN ('admin@demo.com', 'editor@demo.com', 'viewer@demo.com');
+WHERE au.email IN ('admin@demo.com', 'editor@demo.com');

@@ -43,10 +43,3 @@ WHERE user_id IN (
 )
 AND role != 'editor';
 
-UPDATE public.user_profiles
-SET role = 'viewer', first_name = 'Viewer', last_name = 'Demo'
-WHERE user_id IN (
-  SELECT id FROM auth.users WHERE email = 'viewer@demo.com'
-)
-AND role != 'viewer';
-
