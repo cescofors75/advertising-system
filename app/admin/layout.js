@@ -14,8 +14,8 @@ import {
   User,
   Monitor,
   Palette,
+  Car,
 } from "lucide-react";
-import { Calculator, Car } from "lucide-react";
 
 
 export default function AdminLayout({ children }) {
@@ -189,14 +189,14 @@ useEffect(() => {
                     <Users className="w-4 h-4 mr-2" />
                     Usuarios
                   </Link>*/}
-                 
-                  <Link
+
+                  {/*<Link
                     href="/admin/studio"
                     className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
                   >
                     <Calculator className="w-4 h-4 mr-2" />
                     Calculator
-                  </Link>
+                  </Link>*/}
 
                   {/*<Link
                     href="/admin/realtime"
@@ -284,15 +284,14 @@ useEffect(() => {
               <Users className="w-4 h-4 mr-2" />
               Usuarios
             </Link>*/}
-           
-            
-            <Link
+
+            {/*<Link
               href="/admin/studio"
               className="flex-shrink-0 inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
             >
               <Calculator className="w-4 h-4 mr-2" />
               Calculator
-            </Link>
+            </Link>*/}
 
             <Link
               href="/admin/realtime"
