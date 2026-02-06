@@ -129,9 +129,9 @@ const emptyAd = {
         website_url: formData.website_url,
         show_qr_code: formData.show_qr_code,
         qr_type: formData.qr_type, // Nuevo campo
-        product_name: formData.product_name, // Nuevo campo
-        product_price: formData.product_price, // Nuevo campo
-        payment_provider: formData.payment_provider, // Nuevo campo
+        product_name: formData.product_name || null, // Nuevo campo
+        product_price: formData.product_price !== '' ? parseFloat(formData.product_price) || null : null, // Nuevo campo
+        payment_provider: formData.payment_provider || null, // Nuevo campo
         // Nuevas propiedades para personalización del banner
         qr_position: formData.qr_position || 'top',
         qr_color_web: formData.qr_color_web || 'black',
