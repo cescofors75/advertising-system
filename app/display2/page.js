@@ -15,6 +15,148 @@ const GRADIENT =
 const DARK_GRADIENT =
   "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #404040 100%)";
 
+// Custom CSS animations for professional transitions
+const customStyles = `
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(60px) scale(0.97); filter: blur(8px); }
+    to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  }
+  @keyframes slideOutLeft {
+    from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+    to { opacity: 0; transform: translateX(-60px) scale(0.97); filter: blur(8px); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-60px) scale(0.97); filter: blur(8px); }
+    to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  }
+  @keyframes slideOutRight {
+    from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+    to { opacity: 0; transform: translateX(60px) scale(0.97); filter: blur(8px); }
+  }
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.92); filter: blur(6px); }
+    to { opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+  @keyframes fadeOutScale {
+    from { opacity: 1; transform: scale(1); filter: blur(0); }
+    to { opacity: 0; transform: scale(1.03); filter: blur(6px); }
+  }
+  @keyframes floatQR {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(255,128,0,0.3), 0 0 30px rgba(255,128,0,0.1); }
+    50% { box-shadow: 0 0 25px rgba(255,128,0,0.5), 0 0 50px rgba(255,128,0,0.2); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes borderRotate {
+    0% { border-color: rgba(255,255,255,0.3); }
+    50% { border-color: rgba(255,255,255,0.6); }
+    100% { border-color: rgba(255,255,255,0.3); }
+  }
+  .slide-in-right { animation: slideInRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .slide-out-left { animation: slideOutLeft 0.5s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+  .slide-in-left { animation: slideInLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .slide-out-right { animation: slideOutRight 0.5s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+  .fade-in-scale { animation: fadeInScale 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .fade-out-scale { animation: fadeOutScale 0.5s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+  .float-qr { animation: floatQR 3s ease-in-out infinite; }
+  .glow-pulse { animation: glowPulse 2.5s ease-in-out infinite; }
+  .shimmer-text {
+    background: linear-gradient(90deg, #fff 0%, #ffe0b2 40%, #fff 60%, #ffe0b2 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3s linear infinite;
+  }
+`;
+
+// Professional VisitToo Sidebar Component
+const VisitTooSidebar = () => (
+  <div 
+    className="w-[20%] h-full relative overflow-hidden flex flex-col items-center justify-center"
+    style={{ background: 'linear-gradient(180deg, #ff8c00 0%, #ff6b00 40%, #e55a00 70%, #cc4e00 100%)' }}
+  >
+    {/* Subtle pattern overlay */}
+    <div className="absolute inset-0 opacity-[0.07]">
+      <div className="absolute inset-0" style={{
+        backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)',
+        backgroundSize: '30px 30px'
+      }} />
+    </div>
+
+    {/* Top accent line */}
+    <div className="absolute top-0 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
+    {/* Content */}
+    <div className="relative z-10 flex flex-col items-center justify-center px-6 space-y-8">
+      {/* Logo VisitToo with glow */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl scale-150" />
+        <img
+          src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
+          alt="VisitToo"
+          className="w-36 h-auto relative z-10 drop-shadow-lg"
+        />
+      </div>
+
+      {/* Decorative separator */}
+      <div className="flex items-center w-full max-w-[140px]">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/40" />
+        <div className="mx-3">
+          <div className="w-2 h-2 bg-white/60 rounded-full" />
+        </div>
+        <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/40" />
+      </div>
+
+      {/* Text "Para más información" */}
+      <div className="text-center">
+        <p className="text-white/90 text-base font-light tracking-wide uppercase" style={{ letterSpacing: '0.15em' }}>
+          Para más información
+        </p>
+      </div>
+
+      {/* QR Code with professional frame */}
+      <div className="float-qr">
+        <div className="relative glow-pulse rounded-2xl">
+          {/* Corner accents */}
+          <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-white/50 rounded-tl-lg" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-white/50 rounded-tr-lg" />
+          <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-white/50 rounded-bl-lg" />
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-white/50 rounded-br-lg" />
+          
+          <div className="bg-white p-4 rounded-2xl shadow-2xl">
+            <img
+              src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://visittoo.com&margin=1"
+              alt="QR Code VisitToo"
+              className="w-36 h-36 rounded-xl"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Text "Escanéame" with shimmer */}
+      <div className="text-center">
+        <p className="shimmer-text text-2xl font-bold tracking-wider">
+          Escanéame
+        </p>
+        <div className="mt-2 flex items-center justify-center space-x-1">
+          <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+          <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+          <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+        </div>
+      </div>
+    </div>
+
+    {/* Bottom accent line */}
+    <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+  </div>
+);
+
 // Time slot definitions
 
 const TIME_SLOTS = {
@@ -1358,6 +1500,7 @@ export default function DisplayPage() {
 
   const LoadingScreen = () => (
     <div className="flex h-screen bg-black relative overflow-hidden">
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
       {/* Main Content Area - 80% width */}
       <div className="w-[80%] h-full relative overflow-hidden flex items-center justify-center">
         {/* Animated background */}
@@ -1393,45 +1536,7 @@ export default function DisplayPage() {
         </div>
       </div>
 
-      {/* VisitToo Branded Sidebar - 20% width */}
-      <div 
-        className="w-[20%] h-full flex flex-col items-center justify-center px-4"
-        style={{ backgroundColor: ORANGE }}
-      >
-        {/* Logo VisitToo */}
-        <div className="mb-8">
-          <img
-            src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
-            alt="VisitToo"
-            className="w-32 h-auto"
-          />
-        </div>
-
-        {/* Text "Para mas información" */}
-        <div className="mb-6 text-center">
-          <p className="text-white text-lg font-medium">
-            Para más información
-          </p>
-        </div>
-
-        {/* QR Code with rounded corners */}
-        <div className="mb-6">
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://visittoo.com"
-              alt="QR Code VisitToo"
-              className="w-32 h-32 rounded-xl"
-            />
-          </div>
-        </div>
-
-        {/* Text "Scaneame" */}
-        <div className="text-center">
-          <p className="text-white text-xl font-bold animate-pulse">
-            Scaneame
-          </p>
-        </div>
-      </div>
+      <VisitTooSidebar />
     </div>
   );
 
@@ -1440,6 +1545,7 @@ export default function DisplayPage() {
   if (error) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 relative overflow-hidden">
+        <style dangerouslySetInnerHTML={{ __html: customStyles }} />
         {/* Main Content Area - 80% width */}
         <div className="w-[80%] h-full relative overflow-hidden flex flex-col items-center justify-center">
           <div className="absolute inset-0 opacity-10">
@@ -1482,45 +1588,7 @@ export default function DisplayPage() {
           </div>
         </div>
 
-        {/* VisitToo Branded Sidebar - 20% width */}
-        <div 
-          className="w-[20%] h-full flex flex-col items-center justify-center px-4"
-          style={{ backgroundColor: ORANGE }}
-        >
-          {/* Logo VisitToo */}
-          <div className="mb-8">
-            <img
-              src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
-              alt="VisitToo"
-              className="w-32 h-auto"
-            />
-          </div>
-
-          {/* Text "Para mas información" */}
-          <div className="mb-6 text-center">
-            <p className="text-white text-lg font-medium">
-              Para más información
-            </p>
-          </div>
-
-          {/* QR Code with rounded corners */}
-          <div className="mb-6">
-            <div className="bg-white p-4 rounded-2xl shadow-lg">
-              <img
-                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://visittoo.com"
-                alt="QR Code VisitToo"
-                className="w-32 h-32 rounded-xl"
-              />
-            </div>
-          </div>
-
-          {/* Text "Scaneame" */}
-          <div className="text-center">
-            <p className="text-white text-xl font-bold animate-pulse">
-              Scaneame
-            </p>
-          </div>
-        </div>
+        <VisitTooSidebar />
       </div>
     );
   }
@@ -1530,6 +1598,7 @@ export default function DisplayPage() {
     const timeSlotName = TIME_SLOTS[currentTimeSlot]?.name || "actual";
     return (
       <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-hidden">
+        <style dangerouslySetInnerHTML={{ __html: customStyles }} />
         {/* Main Content Area - 80% width */}
         <div className="w-[80%] h-full relative overflow-hidden flex flex-col items-center justify-center">
           {/* Animated background elements */}
@@ -1583,53 +1652,29 @@ export default function DisplayPage() {
           </div>
         </div>
 
-        {/* VisitToo Branded Sidebar - 20% width */}
-        <div 
-          className="w-[20%] h-full flex flex-col items-center justify-center px-4"
-          style={{ backgroundColor: ORANGE }}
-        >
-          {/* Logo VisitToo */}
-          <div className="mb-8">
-            <img
-              src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
-              alt="VisitToo"
-              className="w-32 h-auto"
-            />
-          </div>
-
-          {/* Text "Para mas información" */}
-          <div className="mb-6 text-center">
-            <p className="text-white text-lg font-medium">
-              Para más información
-            </p>
-          </div>
-
-          {/* QR Code with rounded corners */}
-          <div className="mb-6">
-            <div className="bg-white p-4 rounded-2xl shadow-lg">
-              <img
-                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://visittoo.com"
-                alt="QR Code VisitToo"
-                className="w-32 h-32 rounded-xl"
-              />
-            </div>
-          </div>
-
-          {/* Text "Scaneame" */}
-          <div className="text-center">
-            <p className="text-white text-xl font-bold animate-pulse">
-              Scaneame
-            </p>
-          </div>
-        </div>
+        <VisitTooSidebar />
       </div>
     );
   }
 
   const currentAdIndex = filteredAds[currentAdIndexIndex];
 
+  // Determine transition class based on fade state and direction
+  const getTransitionClass = (isWeather = false) => {
+    if (fadeState === "in") {
+      if (isWeather) return "fade-in-scale";
+      return slideDirection === "next" ? "slide-in-right" : "slide-in-left";
+    } else {
+      if (isWeather) return "fade-out-scale";
+      return slideDirection === "next" ? "slide-out-left" : "slide-out-right";
+    }
+  };
+
   return (
     <div className="flex h-screen bg-black relative overflow-hidden">
+      {/* Inject custom styles */}
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+      
       {/* Main Content Area - 80% width */}
       <div className="w-[80%] h-full relative overflow-hidden">
       {realtimeNotification && (
@@ -1738,26 +1783,16 @@ export default function DisplayPage() {
       <div className="flex-grow relative flex flex-col items-center justify-center px-6 py-4">
         {showWeather ? (
           <div
-            className={`w-full h-full transition-all duration-800 ease-in-out transform ${
-              fadeState === "in"
-                ? "opacity-100 scale-100 translate-y-0"
-                : "opacity-0 scale-95 translate-y-8"
-            }`}
+            key={`weather-${weatherSlide}`}
+            className={`w-full h-full ${getTransitionClass(true)}`}
           >
             <WeatherScreen />
           </div>
         ) : (
           currentAdIndex && (
             <div
-              className={`w-full max-w-7xl transition-all duration-800 ease-in-out transform ${
-                fadeState === "in"
-                  ? "opacity-100 scale-100 translate-y-0"
-                  : `opacity-0 scale-95 ${
-                      slideDirection === "next"
-                        ? "translate-y-8"
-                        : "-translate-y-8"
-                    }`
-              }`}
+              key={`ad-${currentAdIndexIndex}`}
+              className={`w-full max-w-7xl ${getTransitionClass(false)}`}
             >
               {/* Media Container with advanced styling - Title removed to maximize media size */}
               <div className="relative w-full mb-2 rounded-3xl overflow-hidden shadow-2xl" style={{ maxHeight: "calc(100vh - 80px)" }}>
@@ -2034,45 +2069,7 @@ export default function DisplayPage() {
       </div>
       </div>
 
-      {/* VisitToo Branded Sidebar - 20% width */}
-      <div 
-        className="w-[20%] h-full flex flex-col items-center justify-center px-4"
-        style={{ backgroundColor: ORANGE }}
-      >
-        {/* Logo VisitToo */}
-        <div className="mb-8">
-          <img
-            src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
-            alt="VisitToo"
-            className="w-32 h-auto"
-          />
-        </div>
-
-        {/* Text "Para mas información" */}
-        <div className="mb-6 text-center">
-          <p className="text-white text-lg font-medium">
-            Para más información
-          </p>
-        </div>
-
-        {/* QR Code with rounded corners */}
-        <div className="mb-6">
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://visittoo.com"
-              alt="QR Code VisitToo"
-              className="w-32 h-32 rounded-xl"
-            />
-          </div>
-        </div>
-
-        {/* Text "Scaneame" */}
-        <div className="text-center">
-          <p className="text-white text-xl font-bold animate-pulse">
-            Scaneame
-          </p>
-        </div>
-      </div>
+      <VisitTooSidebar />
     </div>
   );
 }
