@@ -192,6 +192,7 @@ export default function DisplayPage() {
   const presenceChannelRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
   const setupInProgressRef = useRef(false);
+  const [currentVideoDuration, setCurrentVideoDuration] = useState(0); // duration in seconds for the currently displayed video
   
 
   // Time slot definitions with translations
@@ -1150,14 +1151,34 @@ export default function DisplayPage() {
   }, [allAds, filterAdsByCurrentTimeSlot, currentAdIndexIndex]);
 
   // Rotate advertisements and weather slides with enhanced animations
+  // Uses dynamic duration: videos play their full length, images/weather use fixed duration
   useEffect(() => {
     if (filteredAds.length === 0) return;
 
     const FADE_DURATION = 800;
-    const SLIDE_DURATION = 7000;
+    const DEFAULT_SLIDE_DURATION = 7000; // 7s for images and weather
 
     let rotationTimer = null;
     let fadeTimer = null;
+
+    // Check if current slide is a video that hasn't loaded metadata yet
+    const currentAd = !showWeather ? filteredAds[currentAdIndexIndex] : null;
+    const isVideo = currentAd && currentAd.media_type === 'video';
+    
+    if (isVideo && currentVideoDuration === 0) {
+      // Video hasn't loaded metadata yet — DON'T start timer.
+      // The timer will start automatically when onLoadedMetadata fires
+      // and sets currentVideoDuration, which re-runs this effect.
+      console.log('⏳ Waiting for video metadata before starting rotation timer...');
+      return;
+    }
+
+    // Calculate how long the current slide should display
+    const slideDuration = isVideo && currentVideoDuration > 0
+      ? (currentVideoDuration * 1000) + 500 // full video + 500ms buffer
+      : DEFAULT_SLIDE_DURATION;
+    
+    console.log(`⏱️ Slide duration: ${slideDuration}ms ${isVideo ? `(video: ${currentVideoDuration.toFixed(1)}s)` : '(image/weather)'}`);
     
     // Function to determine next state in rotation sequence
     const advanceToNextSlide = () => {
@@ -1184,6 +1205,9 @@ export default function DisplayPage() {
 
       // After fade out, update state
       fadeTimer = setTimeout(() => {
+        // Reset video duration for next slide
+        setCurrentVideoDuration(0);
+
         if (!showWeather) {
           // Currently showing ads
           if (currentAdIndexIndex >= filteredAds.length - 1) {
@@ -1222,16 +1246,15 @@ export default function DisplayPage() {
         : `Ad ${currentAdIndexIndex + 1}/${filteredAds.length}`
     );
 
-    // Start rotation sequence
-    rotationTimer = setInterval(advanceToNextSlide, SLIDE_DURATION);
+    // Use setTimeout with dynamic duration
+    rotationTimer = setTimeout(advanceToNextSlide, slideDuration);
 
     // Cleanup: only clear timers
     return () => {
-      console.log('🧹 Cleaning up rotation sequence');
-      if (rotationTimer) clearInterval(rotationTimer);
+      if (rotationTimer) clearTimeout(rotationTimer);
       if (fadeTimer) clearTimeout(fadeTimer);
     };
-  }, [showWeather, weatherSlide, currentAdIndexIndex, filteredAds.length]);
+  }, [showWeather, weatherSlide, currentAdIndexIndex, filteredAds.length, currentVideoDuration]);
 
 // Weather components moved to line 1261
 
@@ -1806,8 +1829,19 @@ export default function DisplayPage() {
                         src={currentAdIndex.media_url}
                         autoPlay
                         muted
-                        loop
+                        playsInline
                         style={{ maxHeight: "calc(100vh - 80px)" }}
+                        onLoadedMetadata={(e) => {
+                          const duration = e.target.duration;
+                          if (duration && isFinite(duration)) {
+                            console.log(`📹 Video metadata loaded: duration=${duration.toFixed(1)}s — rotation timer will now start`);
+                            setCurrentVideoDuration(duration);
+                          }
+                        }}
+                        onEnded={(e) => {
+                          // When video ends naturally, let rotation timer handle the transition
+                          console.log('📹 Video playback ended naturally');
+                        }}
                       />
                       {/* Banner-style QR Code for video (position customizable) */}
                       {currentAdIndex.website_url && currentAdIndex.show_qr_code && (

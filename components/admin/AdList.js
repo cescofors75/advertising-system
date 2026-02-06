@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Eye, Edit, Trash2, Image, Video, Sun, Sunset, Moon, Clock, Globe, QrCode } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Eye, Edit, Trash2, Image, Video, Sun, Sunset, Moon, Clock, Globe, QrCode, Film } from 'lucide-react';
 
 // Time slot definitions
 const TIME_SLOTS = {
@@ -32,6 +32,57 @@ const TIME_SLOTS = {
 };
 
 export default function AdList({ advertisements, onEdit, onDelete, onPreview }) {
+  // Component to show video duration and number of tramos
+  const VideoDurationBadge = ({ mediaUrl }) => {
+    const [duration, setDuration] = useState(null);
+    const videoRef = useRef(null);
+
+    useEffect(() => {
+      if (!mediaUrl) return;
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = mediaUrl;
+      video.onloadedmetadata = () => {
+        if (video.duration && isFinite(video.duration)) {
+          setDuration(video.duration);
+        }
+      };
+      video.onerror = () => setDuration(null);
+      videoRef.current = video;
+      return () => {
+        if (videoRef.current) {
+          videoRef.current.src = '';
+          videoRef.current = null;
+        }
+      };
+    }, [mediaUrl]);
+
+    if (duration === null) return null;
+
+    const SLOT_DURATION = 7; // seconds per normal ad slot
+    const tramos = Math.ceil(duration / SLOT_DURATION);
+    const minutes = Math.floor(duration / 60);
+    const seconds = Math.round(duration % 60);
+    const durationStr = minutes > 0 
+      ? `${minutes}m ${seconds.toString().padStart(2, '0')}s` 
+      : `${seconds}s`;
+
+    return (
+      <div className="mt-1.5 space-y-1">
+        <div className="flex items-center text-xs text-slate-400">
+          <Film className="w-3 h-3 mr-1 text-blue-400" />
+          <span>Duración: <span className="text-white font-medium">{durationStr}</span></span>
+        </div>
+        <div className="flex items-center text-xs">
+          <Clock className="w-3 h-3 mr-1 text-orange-400" />
+          <span className="text-slate-400">
+            Ocupa <span className={`font-bold ${tramos > 1 ? 'text-orange-400' : 'text-emerald-400'}`}>{tramos}</span> {tramos === 1 ? 'tramo' : 'tramos'} de {SLOT_DURATION}s
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   // Render time slot badges for an ad
   const renderTimeSlotBadges = (ad) => {
     const slots = [];
@@ -153,6 +204,9 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
                           )}
                           {ad.media_type}
                         </div>
+                        {ad.media_type === 'video' && (
+                          <VideoDurationBadge mediaUrl={ad.media_url} />
+                        )}
                       </div>
                     </div>
                   ) : (
