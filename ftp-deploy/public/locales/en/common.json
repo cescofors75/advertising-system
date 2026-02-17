@@ -1,0 +1,27 @@
+{
+  "header": {
+    "title": "Publi-Taxi",
+    "subtitle": "Digital Advertising System"
+  },
+  "footer": {
+    "copyright": "© 2025 Publi-Taxi",
+    "developed_by": "Developed on the Costa Brava by VisitToo & VisitTech"
+  },
+  "timeSlots": {
+    "morning": "Morning",
+    "afternoon": "Afternoon",
+    "night": "Night"
+  },
+  "qr": {
+    "web_info": "Scan for more information!",
+    "web_desc": "Scan the QR code or visit our website",
+    "payment_info": "FLASH SALE: {{product}}!",
+    "payment_desc": "{{price}}€ - Quick payment with {{provider}}",
+    "more_info": "More Information"
+  },
+  "language": {
+    "select": "Select your language",
+    "qr_tooltip": "Change language"
+  }
+}
+

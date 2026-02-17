@@ -15,6 +15,148 @@ const GRADIENT =
 const DARK_GRADIENT =
   "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #404040 100%)";
 
+// Custom CSS animations for professional transitions
+const customStyles = `
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(60px) scale(0.97); filter: blur(8px); }
+    to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  }
+  @keyframes slideOutLeft {
+    from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+    to { opacity: 0; transform: translateX(-60px) scale(0.97); filter: blur(8px); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-60px) scale(0.97); filter: blur(8px); }
+    to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  }
+  @keyframes slideOutRight {
+    from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+    to { opacity: 0; transform: translateX(60px) scale(0.97); filter: blur(8px); }
+  }
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.92); filter: blur(6px); }
+    to { opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+  @keyframes fadeOutScale {
+    from { opacity: 1; transform: scale(1); filter: blur(0); }
+    to { opacity: 0; transform: scale(1.03); filter: blur(6px); }
+  }
+  @keyframes floatQR {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(255,128,0,0.3), 0 0 30px rgba(255,128,0,0.1); }
+    50% { box-shadow: 0 0 25px rgba(255,128,0,0.5), 0 0 50px rgba(255,128,0,0.2); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes borderRotate {
+    0% { border-color: rgba(255,255,255,0.3); }
+    50% { border-color: rgba(255,255,255,0.6); }
+    100% { border-color: rgba(255,255,255,0.3); }
+  }
+  .slide-in-right { animation: slideInRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .slide-out-left { animation: slideOutLeft 0.5s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+  .slide-in-left { animation: slideInLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .slide-out-right { animation: slideOutRight 0.5s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+  .fade-in-scale { animation: fadeInScale 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .fade-out-scale { animation: fadeOutScale 0.5s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+  .float-qr { animation: floatQR 3s ease-in-out infinite; }
+  .glow-pulse { animation: glowPulse 2.5s ease-in-out infinite; }
+  .shimmer-text {
+    background: linear-gradient(90deg, #fff 0%, #ffe0b2 40%, #fff 60%, #ffe0b2 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3s linear infinite;
+  }
+`;
+
+// Professional VisitToo Sidebar Component
+const VisitTooSidebar = () => (
+  <div 
+    className="w-[20%] h-full relative overflow-hidden flex flex-col items-center justify-center"
+    style={{ background: 'linear-gradient(180deg, #ff8c00 0%, #ff6b00 40%, #e55a00 70%, #cc4e00 100%)' }}
+  >
+    {/* Subtle pattern overlay */}
+    <div className="absolute inset-0 opacity-[0.07]">
+      <div className="absolute inset-0" style={{
+        backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)',
+        backgroundSize: '30px 30px'
+      }} />
+    </div>
+
+    {/* Top accent line */}
+    <div className="absolute top-0 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
+    {/* Content */}
+    <div className="relative z-10 flex flex-col items-center justify-center px-6 space-y-8">
+      {/* Logo VisitToo with glow */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl scale-150" />
+        <img
+          src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
+          alt="VisitToo"
+          className="w-36 h-auto relative z-10 drop-shadow-lg"
+        />
+      </div>
+
+      {/* Decorative separator */}
+      <div className="flex items-center w-full max-w-[140px]">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/40" />
+        <div className="mx-3">
+          <div className="w-2 h-2 bg-white/60 rounded-full" />
+        </div>
+        <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/40" />
+      </div>
+
+      {/* Text "Para más información" */}
+      <div className="text-center">
+        <p className="text-white/90 text-base font-light tracking-wide uppercase" style={{ letterSpacing: '0.15em' }}>
+          Para más información
+        </p>
+      </div>
+
+      {/* QR Code with professional frame */}
+      <div className="float-qr">
+        <div className="relative glow-pulse rounded-2xl">
+          {/* Corner accents */}
+          <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-white/50 rounded-tl-lg" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-white/50 rounded-tr-lg" />
+          <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-white/50 rounded-bl-lg" />
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-white/50 rounded-br-lg" />
+          
+          <div className="bg-white p-4 rounded-2xl shadow-2xl">
+            <img
+              src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://visittoo.com&margin=1"
+              alt="QR Code VisitToo"
+              className="w-36 h-36 rounded-xl"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Text "Escanéame" with shimmer */}
+      <div className="text-center">
+        <p className="shimmer-text text-2xl font-bold tracking-wider">
+          Escanéame
+        </p>
+        <div className="mt-2 flex items-center justify-center space-x-1">
+          <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+          <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+          <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+        </div>
+      </div>
+    </div>
+
+    {/* Bottom accent line */}
+    <div className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+  </div>
+);
+
 // Time slot definitions
 
 const TIME_SLOTS = {
@@ -50,6 +192,7 @@ export default function DisplayPage() {
   const presenceChannelRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
   const setupInProgressRef = useRef(false);
+  const [currentVideoDuration, setCurrentVideoDuration] = useState(0); // duration in seconds for the currently displayed video
   
 
   // Time slot definitions with translations
@@ -1008,14 +1151,34 @@ export default function DisplayPage() {
   }, [allAds, filterAdsByCurrentTimeSlot, currentAdIndexIndex]);
 
   // Rotate advertisements and weather slides with enhanced animations
+  // Uses dynamic duration: videos play their full length, images/weather use fixed duration
   useEffect(() => {
     if (filteredAds.length === 0) return;
 
     const FADE_DURATION = 800;
-    const SLIDE_DURATION = 7000;
+    const DEFAULT_SLIDE_DURATION = 7000; // 7s for images and weather
 
     let rotationTimer = null;
     let fadeTimer = null;
+
+    // Check if current slide is a video that hasn't loaded metadata yet
+    const currentAd = !showWeather ? filteredAds[currentAdIndexIndex] : null;
+    const isVideo = currentAd && currentAd.media_type === 'video';
+    
+    if (isVideo && currentVideoDuration === 0) {
+      // Video hasn't loaded metadata yet — DON'T start timer.
+      // The timer will start automatically when onLoadedMetadata fires
+      // and sets currentVideoDuration, which re-runs this effect.
+      console.log('⏳ Waiting for video metadata before starting rotation timer...');
+      return;
+    }
+
+    // Calculate how long the current slide should display
+    const slideDuration = isVideo && currentVideoDuration > 0
+      ? (currentVideoDuration * 1000) + 500 // full video + 500ms buffer
+      : DEFAULT_SLIDE_DURATION;
+    
+    console.log(`⏱️ Slide duration: ${slideDuration}ms ${isVideo ? `(video: ${currentVideoDuration.toFixed(1)}s)` : '(image/weather)'}`);
     
     // Function to determine next state in rotation sequence
     const advanceToNextSlide = () => {
@@ -1042,6 +1205,9 @@ export default function DisplayPage() {
 
       // After fade out, update state
       fadeTimer = setTimeout(() => {
+        // Reset video duration for next slide
+        setCurrentVideoDuration(0);
+
         if (!showWeather) {
           // Currently showing ads
           if (currentAdIndexIndex >= filteredAds.length - 1) {
@@ -1080,16 +1246,15 @@ export default function DisplayPage() {
         : `Ad ${currentAdIndexIndex + 1}/${filteredAds.length}`
     );
 
-    // Start rotation sequence
-    rotationTimer = setInterval(advanceToNextSlide, SLIDE_DURATION);
+    // Use setTimeout with dynamic duration
+    rotationTimer = setTimeout(advanceToNextSlide, slideDuration);
 
     // Cleanup: only clear timers
     return () => {
-      console.log('🧹 Cleaning up rotation sequence');
-      if (rotationTimer) clearInterval(rotationTimer);
+      if (rotationTimer) clearTimeout(rotationTimer);
       if (fadeTimer) clearTimeout(fadeTimer);
     };
-  }, [showWeather, weatherSlide, currentAdIndexIndex, filteredAds.length]);
+  }, [showWeather, weatherSlide, currentAdIndexIndex, filteredAds.length, currentVideoDuration]);
 
 // Weather components moved to line 1261
 
@@ -1357,48 +1522,30 @@ export default function DisplayPage() {
 // Remove duplicate WeatherScreen component and any other trailing code
 
   const LoadingScreen = () => (
-    <div className="flex flex-col h-screen bg-black relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 via-purple-500/30 to-blue-500/30 animate-pulse"></div>
-        {/* Solo renderizar partículas en el cliente */}
-        {isClient &&
-          [...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random() * 2}s`,
-              }}
-            />
-          ))}
-      </div>
-
-      {/* Header */}
-      <header
-        className="relative z-10 py-4 px-6"
-        style={{ background: GRADIENT }}
-      >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-              <div className="w-8 h-8 bg-orange-500 rounded-full animate-spin"></div>
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-wide">
-              Publi-Taxi
-            </h1>
-          </div>
-          <div className="text-white/90 text-lg font-medium">
-            Sistema Publicitario Digital
-          </div>
+    <div className="flex h-screen bg-black relative overflow-hidden">
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+      {/* Main Content Area - 80% width */}
+      <div className="w-[80%] h-full relative overflow-hidden flex items-center justify-center">
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 via-purple-500/30 to-blue-500/30 animate-pulse"></div>
+          {/* Solo renderizar partículas en el cliente */}
+          {isClient &&
+            [...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${1 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
         </div>
-      </header>
 
-      <div className="flex-grow flex items-center justify-center relative z-10">
-        <div className="text-center">
+        <div className="text-center relative z-10">
           <div className="relative mb-8">
             <div className="w-32 h-32 mx-auto bg-gradient-to-r from-orange-400 to-orange-600 rounded-full animate-pulse shadow-2xl"></div>
             <div className="absolute inset-0 w-32 h-32 mx-auto border-4 border-orange-300 rounded-full animate-spin"></div>
@@ -1412,11 +1559,7 @@ export default function DisplayPage() {
         </div>
       </div>
 
-      <footer className="relative z-10 py-3 px-6 bg-black/50 backdrop-blur-sm">
-        <div className="text-center text-white/70">
-          © 2025 Publi-Taxi - Tecnología Avanzada
-        </div>
-      </footer>
+      <VisitTooSidebar />
     </div>
   );
 
@@ -1424,58 +1567,51 @@ export default function DisplayPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          {isClient &&
-            [...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-2 h-2 bg-white rounded-full animate-bounce"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 2}s`,
-                }}
-              />
-            ))}
+      <div className="flex h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 relative overflow-hidden">
+        <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+        {/* Main Content Area - 80% width */}
+        <div className="w-[80%] h-full relative overflow-hidden flex flex-col items-center justify-center">
+          <div className="absolute inset-0 opacity-10">
+            {isClient &&
+              [...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 bg-white rounded-full animate-bounce"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2}s`,
+                  }}
+                />
+              ))}
+          </div>
+
+          <div className="text-center px-8 relative z-10">
+            <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mb-8 animate-pulse mx-auto">
+              <svg
+                className="w-12 h-12 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 19c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-5xl font-bold text-white mb-6">
+              Sistema Temporalmente Inactivo
+            </h2>
+            <p className="text-xl text-red-100 max-w-2xl leading-relaxed">
+              {error}
+            </p>
+          </div>
         </div>
 
-        <header className="relative z-10 py-4 px-6 bg-red-600">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Publi-Taxi</h1>
-            <div className="text-red-100">Sistema en Mantenimiento</div>
-          </div>
-        </header>
-
-        <div className="flex-grow flex flex-col items-center justify-center relative z-10 text-center px-8">
-          <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mb-8 animate-pulse">
-            <svg
-              className="w-12 h-12 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 19c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-5xl font-bold text-white mb-6">
-            Sistema Temporalmente Inactivo
-          </h2>
-          <p className="text-xl text-red-100 max-w-2xl leading-relaxed">
-            {error}
-          </p>
-        </div>
-
-        <footer className="relative z-10 py-3 px-6 bg-red-800/50 backdrop-blur-sm">
-          <div className="text-center text-red-100">
-            © 2025 Publi-Taxi - Soporte Técnico Disponible
-          </div>
-        </footer>
+        <VisitTooSidebar />
       </div>
     );
   }
@@ -1484,51 +1620,28 @@ export default function DisplayPage() {
   if (filteredAds.length === 0) {
     const timeSlotName = TIME_SLOTS[currentTimeSlot]?.name || "actual";
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0">
-          {isClient &&
-            [...Array(30)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 bg-white/30 rounded-full animate-pulse"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`,
-                }}
-              />
-            ))}
-        </div>
-
-        <header
-          className="relative z-10 py-4 px-6"
-          style={{ background: GRADIENT }}
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <div className="w-6 h-6 bg-orange-500 rounded-full"></div>
-              </div>
-              <h1 className="text-2xl font-bold text-white">Publi-Taxi</h1>
-            </div>
-            <div className="text-white/90 flex items-center space-x-4">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-                {timeSlotName}
-              </span>
-              <span className="text-lg">
-                {currentTime.toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
+      <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-hidden">
+        <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+        {/* Main Content Area - 80% width */}
+        <div className="w-[80%] h-full relative overflow-hidden flex flex-col items-center justify-center">
+          {/* Animated background elements */}
+          <div className="absolute inset-0">
+            {isClient &&
+              [...Array(30)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-white/30 rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 3}s`,
+                    animationDuration: `${2 + Math.random() * 2}s`,
+                  }}
+                />
+              ))}
           </div>
-        </header>
 
-        <div className="flex-grow flex flex-col items-center justify-center relative z-10 px-8">
-          <div className="text-center max-w-4xl">
+          <div className="text-center max-w-4xl relative z-10 px-8">
             <div className="w-32 h-32 mx-auto mb-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
               <svg
                 className="w-16 h-16 text-white"
@@ -1562,53 +1675,31 @@ export default function DisplayPage() {
           </div>
         </div>
 
-        <footer className="relative z-10 py-3 px-6 bg-black/30 backdrop-blur-sm">
-          <div className="text-center text-white/70">
-            © 2025 Developed on the Costa Brava by VisitToo & VisitTech
-          </div>
-        </footer>
+        <VisitTooSidebar />
       </div>
     );
   }
 
   const currentAdIndex = filteredAds[currentAdIndexIndex];
 
+  // Determine transition class based on fade state and direction
+  const getTransitionClass = (isWeather = false) => {
+    if (fadeState === "in") {
+      if (isWeather) return "fade-in-scale";
+      return slideDirection === "next" ? "slide-in-right" : "slide-in-left";
+    } else {
+      if (isWeather) return "fade-out-scale";
+      return slideDirection === "next" ? "slide-out-left" : "slide-out-right";
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-black relative overflow-hidden">
-      {/* Debug Panel - Temporal */}
-      {/* <div className="fixed top-20 left-4 bg-black/80 text-white p-4 rounded-lg z-50 text-sm">
-        <h3 className="font-bold mb-2">🔍 Debug Info</h3>
-        <p>📊 Total ads: {filteredAds.length}</p>
-        <p>📍 Current index: {currentAdIndexIndex}</p>
-        <p>🌤️ Show weather: {showWeather ? 'YES' : 'NO'}</p>
-        <p>📋 Weather data: {weatherData ? 'LOADED ✅' : weatherLoading ? 'LOADING...' : 'NOT LOADED ❌'}</p>
-        <p>🎯 Next action: {
-          showWeather ? 'Hide weather → Ad 1' :
-          currentAdIndexIndex >= filteredAds.length - 1 ? 'Show weather' :
-          `Show ad ${currentAdIndexIndex + 2}`
-        }</p>
-        <div className="mt-3 text-xs opacity-70">
-          <p>Sequence should be:</p>
-          {filteredAds.map((ad, i) => (
-            <span key={i} className={currentAdIndexIndex === i && !showWeather ? 'text-green-400' : ''}>
-              Ad{i+1} → 
-            </span>
-          ))}
-          <span className={showWeather ? 'text-green-400' : ''}>Weather → </span>
-          <span>Repeat</span>
-        </div>
-        
-        <button
-          onClick={() => {
-            console.log('🔄 Manual weather refresh triggered');
-            refreshWeatherData();
-          }}
-          className="mt-2 px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
-        >
-          🔄 Force Weather Refresh
-        </button>
-      </div> */}
-      {/* End Debug Panel */}
+    <div className="flex h-screen bg-black relative overflow-hidden">
+      {/* Inject custom styles */}
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+      
+      {/* Main Content Area - 80% width */}
+      <div className="w-[80%] h-full relative overflow-hidden">
       {realtimeNotification && (
         <div className="fixed top-4 right-4 z-50 animate-bounce">
           <div
@@ -1711,133 +1802,23 @@ export default function DisplayPage() {
         </div>
       </div>
 
-      {/* Premium Header */}
-      <header
-        className="relative z-20 py-2 px-6 backdrop-blur-md"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(255, 128, 0, 0.95) 0%, rgba(255, 107, 0, 0.95) 50%, rgba(229, 90, 0, 0.95) 100%)",
-        }}
-      >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full animate-pulse"></div>
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-wide">
-                Publi-Taxi
-              </h1>
-              <p className="text-white/80 text-sm">
-                Premium Digital Advertising
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-6 text-white">
-            {/* Realtime Status Indicator */}
-            <div className="flex items-center space-x-2">
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  realtimeStatus === "connected"
-                    ? "bg-green-400 animate-pulse"
-                    : realtimeStatus === "connecting"
-                    ? "bg-yellow-400 animate-pulse"
-                    : "bg-red-400 animate-pulse"
-                }`}
-              ></div>
-              <span className="text-sm font-medium">
-                {realtimeStatus === "connected"
-                  ? "En Vivo"
-                  : realtimeStatus === "connecting"
-                  ? "Conectando..."
-                  : "Desconectado"}
-              </span>
-            </div>
-            {/*<div className="flex items-center space-x-2">
-              <div className="bg-white p-2 rounded-lg shadow-lg">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${window.location.origin}/language-selector`)}`}
-                  alt="Language Selector QR"
-                  className="w-8 h-8"
-                />
-              </div>
-              <span className="text-sm font-medium">Idiomas</span>
-            </div>*/}
-
-            {/* Debug weather button - temporary for testing 
-            <button
-              onClick={() => {
-                console.log('🌤️ Manual weather toggle clicked');
-                setShowWeather(!showWeather);
-                console.log('Weather state changed to:', !showWeather);
-              }}
-              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm font-medium transition-colors"
-            >
-              {showWeather ? '📺 Ads' : '🌤️ Tiempo'}
-            </button>
-            
-            <div className="text-center">
-              <p className="text-sm font-medium opacity-90">Debug Info</p>
-              <p className="text-lg font-bold">{showWeather ? '🌤️ Tiempo' : `📺 Ad ${currentAdIndexIndex + 1}/${filteredAds.length}`}</p>
-            </div>*/}
-
-            <div className="text-center">
-              <p className="text-sm font-medium opacity-90">Franja Horaria</p>
-              <p className="text-lg font-bold">
-                {TIME_SLOTS[currentTimeSlot]?.name}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium opacity-90">Hora Actual</p>
-              <p className="text-2xl font-bold font-mono">
-                {currentTime.toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium opacity-90">Anuncios</p>
-              <p className="text-lg font-bold">
-                {filteredAds.length > 0
-                  ? `${currentAdIndexIndex + 1}/${filteredAds.length}`
-                  : "0/0"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
+      {/* Main Content Area - Full height without header/footer */}
       <div className="flex-grow relative flex flex-col items-center justify-center px-6 py-4">
         {showWeather ? (
           <div
-            className={`w-full h-full transition-all duration-800 ease-in-out transform ${
-              fadeState === "in"
-                ? "opacity-100 scale-100 translate-y-0"
-                : "opacity-0 scale-95 translate-y-8"
-            }`}
+            key={`weather-${weatherSlide}`}
+            className={`w-full h-full ${getTransitionClass(true)}`}
           >
             <WeatherScreen />
           </div>
         ) : (
           currentAdIndex && (
             <div
-              className={`w-full max-w-7xl transition-all duration-800 ease-in-out transform ${
-                fadeState === "in"
-                  ? "opacity-100 scale-100 translate-y-0"
-                  : `opacity-0 scale-95 ${
-                      slideDirection === "next"
-                        ? "translate-y-8"
-                        : "-translate-y-8"
-                    }`
-              }`}
+              key={`ad-${currentAdIndexIndex}`}
+              className={`w-full max-w-7xl ${getTransitionClass(false)}`}
             >
               {/* Media Container with advanced styling - Title removed to maximize media size */}
-              <div className="relative w-full mb-2 rounded-3xl overflow-hidden shadow-2xl" style={{ maxHeight: "calc(100vh - 150px)" }}>
+              <div className="relative w-full mb-2 rounded-3xl overflow-hidden shadow-2xl" style={{ maxHeight: "calc(100vh - 80px)" }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 z-10"></div>
 
                 {currentAdIndex.media_url ? (
@@ -1848,8 +1829,19 @@ export default function DisplayPage() {
                         src={currentAdIndex.media_url}
                         autoPlay
                         muted
-                        loop
-                        style={{ maxHeight: "calc(100vh - 150px)" }}
+                        playsInline
+                        style={{ maxHeight: "calc(100vh - 80px)" }}
+                        onLoadedMetadata={(e) => {
+                          const duration = e.target.duration;
+                          if (duration && isFinite(duration)) {
+                            console.log(`📹 Video metadata loaded: duration=${duration.toFixed(1)}s — rotation timer will now start`);
+                            setCurrentVideoDuration(duration);
+                          }
+                        }}
+                        onEnded={(e) => {
+                          // When video ends naturally, let rotation timer handle the transition
+                          console.log('📹 Video playback ended naturally');
+                        }}
                       />
                       {/* Banner-style QR Code for video (position customizable) */}
                       {currentAdIndex.website_url && currentAdIndex.show_qr_code && (
@@ -1962,7 +1954,7 @@ export default function DisplayPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="relative w-full" style={{ maxWidth: "100%", maxHeight: "calc(100vh - 150px)" }}>
+                    <div className="relative w-full" style={{ maxWidth: "100%", maxHeight: "calc(100vh - 80px)" }}>
                       {/* 16:9 aspect ratio container (9/16 = 0.5625 or 56.25%) */}
                       <div className="relative w-full pb-[56.25%] overflow-hidden bg-black">
                         <img
@@ -2109,41 +2101,9 @@ export default function DisplayPage() {
           </div>
         )}
       </div>
+      </div>
 
-
-      {/* Premium Footer */}
-      <footer className="relative z-20 py-2 px-6 bg-black/80 backdrop-blur-md">
-        <div className="flex justify-between items-center text-white/90">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full"></div>
-            <span className="font-medium">© 2025 Publi-Taxi</span>
-          </div>
-          <div className="text-center flex-grow">
-            <span className="text-sm">Developed on the Costa Brava by </span>
-            <span className="font-semibold text-orange-400">
-              VisitToo & VisitTech
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div
-              className={`w-2 h-2 rounded-full animate-pulse ${
-                realtimeStatus === "connected"
-                  ? "bg-green-400"
-                  : realtimeStatus === "connecting"
-                  ? "bg-yellow-400"
-                  : "bg-red-400"
-              }`}
-            ></div>
-            <span className="text-sm font-medium">
-              {realtimeStatus === "connected"
-                ? "Sincronización Activa"
-                : realtimeStatus === "connecting"
-                ? "Conectando Sistema..."
-                : "Sistema Desconectado"}
-            </span>
-          </div>
-        </div>
-      </footer>
+      <VisitTooSidebar />
     </div>
   );
 }

@@ -1,0 +1,18 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/realtime/page": "app/admin/realtime/page.js",
+  "/admin/studio/page": "app/admin/studio/page.js",
+  "/admin/usuarios/page": "app/admin/usuarios/page.js",
+  "/api/users/[id]/route": "app/api/users/[id]/route.js",
+  "/api/users/admin-check/route": "app/api/users/admin-check/route.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/auth/logout/page": "app/auth/logout/page.js",
+  "/display/page": "app/display/page.js",
+  "/display2/page": "app/display2/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
+}
