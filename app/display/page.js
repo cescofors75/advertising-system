@@ -98,7 +98,7 @@ const VisitTooSidebar = () => (
       {/* Logo VisitToo with glow */}
       <div className="relative">
         <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl scale-150" />
-        <Image
+        <img
           src="https://www.visittoo.com/img/master/logo_visitToo_white.png"
           alt="VisitToo"
           width={144}
@@ -133,7 +133,7 @@ const VisitTooSidebar = () => (
           <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-white/50 rounded-br-lg" />
           
           <div className="bg-white p-4 rounded-2xl shadow-2xl">
-            <Image
+            <img
               src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://visittoo.com&margin=1"
               alt="QR Code VisitToo"
               width={144}
@@ -1899,7 +1899,7 @@ export default function DisplayPage() {
                       : 'border-2 border-orange-400'
       : ''
   }`}>
-    <Image
+    <img
       src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
         currentAdIndex.qr_type === 'web' 
           ? currentAdIndex.website_url 
@@ -1964,7 +1964,7 @@ export default function DisplayPage() {
                     <div className="relative w-full" style={{ maxWidth: "100%", maxHeight: "calc(100vh - 80px)" }}>
                       {/* 16:9 aspect ratio container (9/16 = 0.5625 or 56.25%) */}
                       <div className="relative w-full pb-[56.25%] overflow-hidden bg-black">
-                        <Image
+                        <img
                           className="absolute inset-0 w-full h-full object-contain"
                           src={currentAdIndex.media_url}
                           alt={currentAdIndex.title}
@@ -2000,7 +2000,7 @@ export default function DisplayPage() {
                                       : 'border-2 border-orange-400'
                                   : ''
                               }`}>
-                                <Image
+                                <img
                                   src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
                                     currentAdIndex.qr_type === 'web' 
                                       ? currentAdIndex.website_url 

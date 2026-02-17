@@ -200,7 +200,7 @@ export default function AdList({ advertisements, onEdit, onDelete, onPreview }) 
                           {ad.media_type === 'video' ? (
                             <Video className="w-4 h-4 mr-1 text-blue-400" />
                           ) : (
-                            <Image className="w-4 h-4 mr-1 text-emerald-400" />
+                            <img className="w-4 h-4 mr-1 text-emerald-400" />
                           )}
                           {ad.media_type}
                         </div>

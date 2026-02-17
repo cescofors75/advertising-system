@@ -165,7 +165,7 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
                   alt="Vista previa del anuncio" 
                 />
                 <div className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-full flex items-center">
-                  <Image className="w-4 h-4 text-emerald-400 mr-1" />
+                  <img className="w-4 h-4 text-emerald-400 mr-1" />
                   <span className="text-sm text-slate-300">Imagen</span>
                 </div>
               </div>
