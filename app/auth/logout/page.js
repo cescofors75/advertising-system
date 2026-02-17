@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabaseClient';
+import { signOut } from 'next-auth/react';
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export default function LogoutPage() {
   useEffect(() => {
     const logout = async () => {
       try {
-        await supabase.auth.signOut();
+        await signOut({ redirect: false });
         setMessage('Sesión cerrada correctamente. Redirigiendo...');
         
         // Redirigir después de un breve retraso para que el usuario vea el mensaje

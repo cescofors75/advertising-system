@@ -1,18 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import supabase from "@/lib/supabaseClient";
+import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
-  Users,
   LogOut,
-  User,
   Monitor,
-  Palette,
   Car,
   Activity,
 } from "lucide-react";
@@ -21,70 +18,13 @@ import {
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showUserTooltip, setShowUserTooltip] = useState(false);
+  const { data: session, status } = useSession();
   const router = useRouter();
-
-  // Obtener información del usuario
-  useEffect(() => {
-    const getUserInfo = async () => {
-      try {
-        setLoading(true);
-
-        // Obtener usuario actual
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) {
-          console.error("Error al obtener usuario:", userError);
-          return;
-        }
-
-        if (!user) {
-          console.error("No hay sesión de usuario");
-          return;
-        }
-
-        setCurrentUser(user);
-
-        // Obtener perfil del usuario
-        const { data: profileData, error: profileError } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error al obtener perfil:", profileError);
-          return;
-        }
-
-        if (!profileData) {
-          console.error("No se encontró perfil para el usuario");
-          return;
-        }
-
-        setUserProfile(profileData);
-      } catch (err) {
-        console.error("Error al obtener información del usuario:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUserInfo();
-  }, []);
-
-
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await supabase.auth.signOut();
+      await signOut({ redirect: false });
       router.push("/auth/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -92,20 +32,6 @@ export default function AdminLayout({ children }) {
       setIsLoggingOut(false);
     }
   };
-
-  // Cerrar el tooltip al hacer clic fuera de él
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (showUserTooltip && !event.target.closest(".user-profile-button")) {
-        setShowUserTooltip(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showUserTooltip]);
 
   return (
     <AuthGuard>
@@ -188,24 +114,15 @@ export default function AdminLayout({ children }) {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                {/* Información del usuario con tooltip */}
-                {!loading && currentUser && userProfile && (
-                  <div className="relative">
-                    <button
-                      className="user-profile-button flex items-center bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-lg px-3 py-2 transition-colors"
-                      onClick={() => setShowUserTooltip(!showUserTooltip)}
-                    >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold mr-2">
-                        {userProfile.first_name
-                          ? userProfile.first_name.charAt(0)
-                          : currentUser.email.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="hidden md:inline">
-                        {userProfile.first_name ||
-                          currentUser.email.split("@")[0]}
-                      </span>
-                      <User className="w-4 h-4 ml-2" />
-                    </button>
+                {/* Información del usuario */}
+                {status === 'authenticated' && session?.user && (
+                  <div className="flex items-center bg-slate-800/50 text-slate-300 rounded-lg px-3 py-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold mr-2">
+                      P
+                    </div>
+                    <span className="hidden md:inline text-sm">
+                      {session.user.name}
+                    </span>
                   </div>
                 )}
 
@@ -277,69 +194,6 @@ export default function AdminLayout({ children }) {
             </Link>
           </div>
         </div>
-
-        {/* Portal para el tooltip de usuario - fuera del flujo normal para evitar problemas de z-index */}
-        {showUserTooltip && !loading && currentUser && userProfile && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none">
-            <div
-              className="absolute right-4 top-16 w-64 bg-slate-800 border border-slate-700 shadow-xl rounded-xl p-4 pointer-events-auto"
-              style={{ maxWidth: "calc(100vw - 2rem)" }}
-            >
-              <div className="text-sm">
-                <div className="flex items-center mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold mr-3">
-                    {userProfile.first_name
-                      ? userProfile.first_name.charAt(0)
-                      : currentUser.email.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">
-                      {userProfile.first_name} {userProfile.last_name}
-                    </p>
-                    <p
-                      className={`text-xs ${
-                        userProfile.role === "admin"
-                          ? "text-purple-400"
-                          : userProfile.role === "editor"
-                          ? "text-green-400"
-                          : "text-blue-400"
-                      }`}
-                    >
-                      {userProfile.role === "admin"
-                        ? "Administrador"
-                        : userProfile.role === "editor"
-                        ? "Editor"
-                        : "Visualizador"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-xs text-slate-400 mb-1">
-                    Correo electrónico
-                  </p>
-                  <p className="text-white">{currentUser.email}</p>
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-xs text-slate-400 mb-1">ID de usuario</p>
-                  <p className="text-slate-300 text-xs truncate">
-                    {currentUser.id}
-                  </p>
-                </div>
-
-                <div className="pt-2 border-t border-slate-700">
-                  <p className="text-xs text-slate-400">
-                    Último acceso:{" "}
-                    {currentUser.last_sign_in_at
-                      ? new Date(currentUser.last_sign_in_at).toLocaleString()
-                      : "No disponible"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Contenido principal */}
         <main>{children}</main>

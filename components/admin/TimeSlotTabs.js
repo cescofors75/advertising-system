@@ -298,9 +298,7 @@ export default function TimeSlotTabs({ advertisements = [], onSelectedAdsChange 
               {activeTab === 'unassigned' ? (
                 <Clock className="w-16 h-16 mx-auto opacity-50" />
               ) : (
-                TIME_SLOTS[activeTab] && React.createElement(TIME_SLOTS[activeTab].icon, {
-                  className: "w-16 h-16 mx-auto opacity-50"
-                })
+                (() => { const Icon = TIME_SLOTS[activeTab]?.icon; return Icon ? <Icon className="w-16 h-16 mx-auto opacity-50" /> : null; })()
               )}
             </div>
             {searchQuery ? (

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import supabase from '@/lib/supabaseClient';
 import MediaUpload from './MediaUpload';
 import { Sun, Sunset, Moon, Globe, QrCode, AlertCircle, Save, X } from 'lucide-react';
 
@@ -146,23 +145,30 @@ const emptyAd = {
       console.log("Saving ad with time slots:", adData);
       
       if (adId) {
-        // Update existing ad
-        const { error } = await supabase
-          .from('advertisements')
-          .update(adData)
-          .eq('id', adId);
-          
-        if (error) throw error;
+        // Update existing ad via API
+        const res = await fetch(`/api/ads/${adId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(adData),
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Error al actualizar');
+        }
         console.log("Ad updated successfully");
       } else {
-        // Insert new ad
-        const { data, error } = await supabase
-          .from('advertisements')
-          .insert(adData)
-          .select();
-          
-        if (error) throw error;
-        adId = data[0].id;
+        // Insert new ad via API
+        const res = await fetch('/api/ads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(adData),
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Error al crear');
+        }
+        const newAd = await res.json();
+        adId = newAd.id;
         console.log("New ad created with ID:", adId);
       }
       

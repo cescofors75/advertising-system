@@ -2,64 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabaseClient';
+import { useSession } from 'next-auth/react';
 
 export default function AuthGuard({ children }) {
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setLoading(true);
-        
-        // 1. Verificar si hay una sesión activa
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Error al verificar sesión:', sessionError);
-          throw sessionError;
-        }
-        
-        if (!sessionData.session) {
-          console.log('No hay sesión activa, redirigiendo a login');
-          router.push('/auth/login');
-          return;
-        }
+    if (status === 'unauthenticated') {
+      router.push('/auth/login');
+    }
+  }, [status, router]);
 
-        // 2. La sesión existe, obtener información del usuario
-        console.log('Sesión encontrada, verificando usuario');
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.error('Error al obtener usuario:', userError);
-          throw userError;
-        }
-
-        if (!userData || !userData.user) {
-          console.log('No se pudo obtener información del usuario');
-          router.push('/auth/login');
-          return;
-        }
-
-        // 3. Ahora permitimos el acceso a cualquier usuario autenticado
-        // Ya no verificamos si es admin aquí - cada página verificará los permisos específicos
-        console.log('Usuario autenticado:', userData.user.email);
-        setAuthenticated(true);
-        
-      } catch (err) {
-        console.error('Error al verificar autenticación:', err);
-        router.push('/auth/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (loading) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
@@ -75,8 +30,8 @@ export default function AuthGuard({ children }) {
     );
   }
 
-  if (!authenticated) {
-    return null; // No renderizar nada mientras se redirige
+  if (status === 'unauthenticated' || !session) {
+    return null;
   }
 
   return children;

@@ -2,125 +2,44 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabaseClient';
-import { LogIn, Mail, Lock, Shield } from 'lucide-react';
+import { signIn, useSession } from 'next-auth/react';
+import { LogIn, User, Lock, Shield } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
+  const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Verificar si ya hay una sesión activa
+  // Redirigir si ya hay sesión activa
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        const { data: userData } = await supabase.auth.getUser();
-        setUser(userData.user);
-        
-        // Verificar si el usuario tiene el rol adecuado
-        const { data: profileData, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('role')
-          .eq('user_id', userData.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error('Error al obtener el perfil del usuario:', profileError);
-          // Si no existe un perfil, podemos crear uno con el rol predeterminado 'viewer'
-          if (profileError.code === 'PGRST116') {
-            const { error: insertError } = await supabase
-              .from('user_profiles')
-              .insert({
-                user_id: userData.user.id,
-                role: 'viewer', // Rol predeterminado para nuevos usuarios
-              });
-            
-            if (insertError) {
-              console.error('Error al crear perfil de usuario:', insertError);
-              setError('Error al verificar permisos de usuario.');
-              await supabase.auth.signOut();
-              return;
-            }
-            
-            setError('No tienes permiso para acceder al panel de administración.');
-            await supabase.auth.signOut();
-            return;
-          }
-          
-          setError('Error al verificar permisos de usuario.');
-          await supabase.auth.signOut();
-          return;
-        }
-        
-        // Verificar el rol del usuario
-        if (profileData && (profileData.role === 'admin' || profileData.role === 'editor')) {
-          router.push('/admin');
-        } else {
-          setError('No tienes permiso para acceder al panel de administración.');
-          await supabase.auth.signOut();
-        }
-      }
-    };
-    
-    checkSession();
-  }, [router]);
+    if (status === 'authenticated' && session) {
+      router.push('/admin');
+    }
+  }, [status, session, router]);
 
-  const handleLoginWithEmail = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      const result = await signIn('credentials', {
+        username,
+        password,
+        redirect: false,
       });
-      
-      if (error) throw error;
-      
-      // Verificar si el usuario tiene el rol adecuado
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', data.user.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Error al obtener el perfil del usuario:', profileError);
-        // Si no existe un perfil, podemos crear uno con el rol predeterminado 'viewer'
-        if (profileError.code === 'PGRST116') {
-          const { error: insertError } = await supabase
-            .from('user_profiles')
-            .insert({
-              user_id: data.user.id,
-              role: 'viewer', // Rol predeterminado para nuevos usuarios
-            });
-          
-          if (insertError) {
-            throw insertError;
-          }
-          
-          setError('No tienes permiso para acceder al panel de administración.');
-          await supabase.auth.signOut();
-          return;
-        }
-        throw profileError;
-      }
-      
-      // Verificar el rol del usuario
-      if (profileData && (profileData.role === 'admin' || profileData.role === 'editor')) {
+
+      if (result?.error) {
+        setError('Usuario o contraseña incorrectos');
+      } else if (result?.ok) {
         router.push('/admin');
-      } else {
-        setError('No tienes permiso para acceder al panel de administración.');
-        await supabase.auth.signOut();
       }
     } catch (err) {
       console.error('Error al iniciar sesión:', err);
-      setError(err.message || 'Error al iniciar sesión');
+      setError('Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -159,25 +78,25 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLoginWithEmail} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300">
-                Correo electrónico
+              <label htmlFor="username" className="block text-sm font-medium text-slate-300">
+                Usuario
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-500" />
+                  <User className="h-5 w-5 text-slate-500" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-600 bg-slate-700/50 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                  placeholder="ejemplo@email.com"
+                  placeholder="Usuario"
                 />
               </div>
             </div>
@@ -217,24 +136,6 @@ export default function LoginPage() {
           </form>
         </div>
         
-        {/* Demo Users Section */}
-        <div className="mt-6 bg-slate-800/50 backdrop-blur py-4 px-6 rounded-xl border border-slate-700/50">
-          <div className="flex items-center justify-center mb-3">
-            <Shield className="w-4 h-4 text-blue-400 mr-2" />
-            <h3 className="text-sm font-semibold text-slate-300">Usuarios de Demo</h3>
-          </div>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between items-center py-2 px-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-              <span className="text-purple-300 font-medium">Admin:</span>
-              <code className="text-slate-300">admin@demo.com / demo123</code>
-            </div>
-            <div className="flex justify-between items-center py-2 px-3 bg-green-500/10 rounded-lg border border-green-500/20">
-              <span className="text-green-300 font-medium">Editor:</span>
-              <code className="text-slate-300">editor@demo.com / demo123</code>
-            </div>
-          </div>
-        </div>
-
         <div className="mt-6 text-center">
           <p className="text-slate-400 text-xs flex items-center justify-center">
             <Shield className="w-3 h-3 mr-1" />

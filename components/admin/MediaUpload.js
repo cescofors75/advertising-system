@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import supabase from '@/lib/supabaseClient';
 import { Upload, Image, Video, Trash2, AlertCircle, Check } from 'lucide-react';
 
 export default function MediaUpload({ initialUrl, initialType, onUpload }) {
@@ -54,34 +53,31 @@ export default function MediaUpload({ initialUrl, initialType, onUpload }) {
         });
       }, 200);
 
-      // Crear un nombre de archivo único
-      const timestamp = new Date().getTime();
-      const fileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
-      
-      // Subir archivo al almacenamiento de Supabase
-      const { data, error: uploadError } = await supabase
-        .storage
-        .from('advertisements')
-        .upload(fileName, file);
-        
-      if (uploadError) throw uploadError;
-      
-      // Obtener URL pública para el archivo subido
-      const { data: { publicUrl } } = supabase
-        .storage
-        .from('advertisements')
-        .getPublicUrl(fileName);
+      // Subir archivo via API route a Azure Blob Storage
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al subir el archivo');
+      }
       
       clearInterval(progressInterval);
       setUploadProgress(100);
       
       // Establecer la URL y el tipo de multimedia
-      setMediaUrl(publicUrl);
-      setMediaType(fileType);
+      setMediaUrl(result.url);
+      setMediaType(result.mediaType);
       
       // Llamar al callback del padre con la URL y el tipo
       if (onUpload) {
-        onUpload(publicUrl, fileType);
+        onUpload(result.url, result.mediaType);
       }
       
       setTimeout(() => {

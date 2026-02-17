@@ -1,0 +1,60 @@
+-- ============================================================
+-- Mapping Guide: Supabase (PostgreSQL) → Azure SQL Database
+-- ============================================================
+--
+-- TABLES MAPPING:
+-- ┌──────────────────────┬──────────────────────────────────────┐
+-- │ Supabase             │ Azure SQL                            │
+-- ├──────────────────────┼──────────────────────────────────────┤
+-- │ auth.users           │ dbo.users                            │
+-- │ user_profiles        │ dbo.user_profiles                    │
+-- │ advertisements       │ dbo.advertisements                   │
+-- │ schedules            │ dbo.schedules                        │
+-- │ connected_devices    │ dbo.connected_devices                │
+-- │ ad_views             │ dbo.ad_views                         │
+-- └──────────────────────┴──────────────────────────────────────┘
+--
+-- TYPE MAPPING:
+-- ┌──────────────────────────────┬──────────────────────────────┐
+-- │ PostgreSQL                   │ SQL Server                   │
+-- ├──────────────────────────────┼──────────────────────────────┤
+-- │ BIGINT GENERATED AS IDENTITY │ BIGINT IDENTITY(1,1)         │
+-- │ UUID                         │ UNIQUEIDENTIFIER             │
+-- │ BOOLEAN                      │ BIT                          │
+-- │ TEXT                         │ NVARCHAR(MAX/n)              │
+-- │ TIMESTAMP WITH TIME ZONE     │ DATETIMEOFFSET               │
+-- │ DECIMAL(10,2)                │ DECIMAL(10,2)                │
+-- │ uuid_generate_v4()           │ NEWID()                      │
+-- │ timezone('utc', now())       │ SYSUTCDATETIME()             │
+-- │ NOW()                        │ SYSUTCDATETIME()             │
+-- └──────────────────────────────┴──────────────────────────────┘
+--
+-- SUPABASE FEATURES → REPLACEMENTS:
+-- ┌──────────────────────────────┬──────────────────────────────┐
+-- │ Supabase Feature             │ Replacement                  │
+-- ├──────────────────────────────┼──────────────────────────────┤
+-- │ Supabase Auth                │ NextAuth.js / Auth.js        │
+-- │ Supabase Storage             │ Azure Blob Storage           │
+-- │ Supabase Realtime            │ SignalR (recommended)        │
+-- │   - postgres_changes         │   SignalR Hub notifications  │
+-- │   - presence                 │   SignalR Groups + tracking  │
+-- │ Row Level Security (RLS)     │ API middleware auth checks   │
+-- │ supabase.from().select()     │ mssql / tedious / Prisma     │
+-- │ ON CONFLICT ... DO UPDATE    │ MERGE statement              │
+-- └──────────────────────────────┴──────────────────────────────┘
+--
+-- REALTIME CHANNELS USED (to replicate in SignalR):
+-- 1. 'advertisements_realtime' - postgres_changes on advertisements table
+--    → SignalR: Broadcast to "advertisements" group on INSERT/UPDATE/DELETE
+-- 2. 'device_presence' - presence channel for online/offline devices
+--    → SignalR: Track connections in "devices" group with OnConnected/OnDisconnected
+-- 3. 'devices-db-changes-*' - postgres_changes on connected_devices
+--    → SignalR: Broadcast to "admin-dashboard" group on device status changes
+-- 4. 'ad-views-*' - postgres_changes on ad_views
+--    → SignalR: Broadcast to "admin-dashboard" group on new ad views
+--
+-- STORED PROCEDURES (available):
+-- sp_UpdateOfflineDevices(@ThresholdMinutes) - Mark stale devices offline
+-- sp_GetActiveAdsByTimeSlot(@TimeSlot)       - Get ads for a time slot
+-- sp_GetDeviceStats()                        - Dashboard statistics
+-- sp_UpsertConnectedDevice(...)              - Create/update device info

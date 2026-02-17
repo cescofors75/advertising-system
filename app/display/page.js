@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import supabase from "@/lib/supabaseClient";
 import { generatePaymentUrl, getPromotionalMessage } from "@/lib/paymentUtils";
 
 
@@ -182,21 +181,17 @@ export default function DisplayPage() {
   const [slideDirection, setSlideDirection] = useState("next");
   const [backgroundPattern, setBackgroundPattern] = useState(0);
   const [isClient, setIsClient] = useState(false);
-  const [realtimeStatus, setRealtimeStatus] = useState("connecting");
-  const [deviceRealtimeStatus, setDeviceRealtimeStatus] = useState("connecting");
+  const [realtimeStatus, setRealtimeStatus] = useState("connected");
   const [realtimeNotification, setRealtimeNotification] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
   const [showWeather, setShowWeather] = useState(false);
   const [weatherSlide, setWeatherSlide] = useState('current'); // 'current' or 'forecast'
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [reconnectCount, setReconnectCount] = useState(0);
-  const [deviceChannel, setDeviceChannel] = useState(null);
   const currentAdIndexRef = useRef(0);
   const filteredAdsRef = useRef([]);
   const currentTimeSlotRef = useRef("");
-  const presenceChannelRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
-  const setupInProgressRef = useRef(false);
   const [currentVideoDuration, setCurrentVideoDuration] = useState(0); // duration in seconds for the currently displayed video
   
 
@@ -213,11 +208,8 @@ export default function DisplayPage() {
 
   // Add this useEffect hook to collect and send device data
   useEffect(() => {
-    let deviceId = "";
-    let presenceChannel = null;
     let heartbeatInterval = null;
-    let reconnectTimeout = null;
-    const RECONNECT_MAX_ATTEMPTS = 10;
+    let deviceId = "";
     
     // Function to get device information and send it
     const collectAndSendDeviceData = async () => {
@@ -247,67 +239,47 @@ export default function DisplayPage() {
       // Collect device information
       const deviceInfo = {
         id: deviceIdentifier,
-        name: deviceIdentifier, // You could customize this with a friendly name
-        ip: "", // This will be captured on the server side
-        last_seen: new Date().toISOString(),
+        name: deviceIdentifier,
+        ip: "",
         os: getOperatingSystem(),
         browser: getBrowserInfo(),
         device_type: getDeviceType(),
-        location: "", // Could be filled in server-side or with user permission
+        location: "",
         status: "online",
         network: navigator.connection
           ? navigator.connection.effectiveType
           : "unknown",
         resolution: `${window.screen.width}x${window.screen.height}`,
         user_agent: navigator.userAgent,
-        first_seen:
-          localStorage.getItem("first_seen") || new Date().toISOString(),
         battery: await getBatteryLevel(),
-        memory_usage: null, // Not available in most browsers
-        cpu_usage: null, // Not available in most browsers
         current_ad: currentAd ? currentAd.title : null,
         current_time_slot: currentTimeSlotRef.current,
       };
 
-      // Save first seen date if it doesn't exist
-      if (!localStorage.getItem("first_seen")) {
-        localStorage.setItem("first_seen", deviceInfo.first_seen);
-      }
-
-      // Send to Supabase
+      // Send to API
       try {
-        // First try to update if the device already exists
-        const { error: upsertError } = await supabase
-          .from("connected_devices")
-          .upsert(deviceInfo, { onConflict: "id" });
-
-        if (upsertError) throw upsertError;
-
+        await fetch('/api/devices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(deviceInfo),
+        });
         console.log("✅ Device info updated successfully");
 
         // If there's a current ad, log the view
         if (currentAd) {
           const adViewKey = `ad_view_${currentAd.id}_${currentAdIndexIndex}`;
           if (!localStorage.getItem(adViewKey)) {
-            // Log ad view to Supabase
-            const { error: adViewError } = await supabase
-              .from("ad_views")
-              .insert([
-                {
-                  device_id: deviceIdentifier,
-                  ad_id: currentAd.id,
-                  timestamp: new Date().toISOString(),
-                  time_slot: currentTimeSlotRef.current,
-                },
-              ]);
-
-            if (adViewError) {
-              console.error("Error logging ad view:", adViewError);
-            } else {
-              // Mark this ad as viewed for this session to avoid duplicate logs
-              localStorage.setItem(adViewKey, "viewed");
-              console.log("✅ Ad view logged successfully");
-            }
+            await fetch('/api/ad-views', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                device_id: deviceIdentifier,
+                ad_id: currentAd.id,
+                time_slot: currentTimeSlotRef.current,
+              }),
+            });
+            localStorage.setItem(adViewKey, "viewed");
+            console.log("✅ Ad view logged successfully");
           }
         }
       } catch (error) {
@@ -316,199 +288,32 @@ export default function DisplayPage() {
 
       return deviceIdentifier;
     };
-    
-    // Function to setup realtime presence channel for device
-    const setupDevicePresenceChannel = async () => {
-      // Prevent multiple simultaneous setups
-      if (setupInProgressRef.current) {
-        console.log('⏸️ Setup already in progress, skipping...');
-        return;
-      }
-      
-      // If already connected, don't reconnect
-      if (presenceChannelRef.current && deviceRealtimeStatus === "connected") {
-        console.log('✅ Already connected to presence channel, skipping setup');
-        return;
-      }
-      
-      setupInProgressRef.current = true;
-      
-      try {
-        console.log(`🔌 Setting up device presence channel (attempt ${reconnectCount + 1})...`);
-        setDeviceRealtimeStatus("connecting");
-        
-        // Make sure we have a device ID first
-        const deviceIdentifier = await collectAndSendDeviceData();
-        
-        if (!deviceIdentifier) {
-          console.error("Cannot set up presence channel without device ID");
-          setupInProgressRef.current = false;
-          return;
-        }
-        deviceId = deviceIdentifier;
-        
-        // Clean up existing channel if any
-        if (presenceChannelRef.current) {
-          console.log('🧹 Cleaning up existing presence channel...');
-          await supabase.removeChannel(presenceChannelRef.current);
-          presenceChannelRef.current = null;
-        }
-        
-        // Clear existing heartbeat
-        if (heartbeatIntervalRef.current) {
-          clearInterval(heartbeatIntervalRef.current);
-          heartbeatIntervalRef.current = null;
-        }
-        
-        // Create a new channel with presence enabled
-        const channel = supabase.channel('device_presence');
-        
-        // Set up presence handlers
-        channel
-          .on('presence', { event: 'sync' }, () => {
-            console.log('👥 Presence state synchronized');
-            setDeviceRealtimeStatus("connected");
-            setReconnectCount(0);
-          })
-          .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-            console.log(`👋 Device ${key} joined with state:`, newPresences);
-          })
-          .on('presence', { event: 'leave' }, ({ key }) => {
-            console.log(`👋 Device ${key} left`);
-          });
-          
-        // Subscribe to the channel
-        const status = await channel.subscribe(async (status) => {
-          console.log(`📡 Device presence channel status: ${status}`);
-          
-          if (status === "SUBSCRIBED") {
-            // Start tracking presence
-            console.log('📤 Starting presence tracking for device:', deviceIdentifier);
-            const presenceTrackStatus = await channel.track({
-              device_id: deviceIdentifier,
-              online_at: new Date().toISOString(),
-            });
-            
-            if (presenceTrackStatus === 'ok') {
-              console.log('✅ Device presence tracking started for:', deviceIdentifier);
-              setDeviceRealtimeStatus("connected");
-              
-              // Set up heartbeat to keep presence active
-              heartbeatIntervalRef.current = setInterval(async () => {
-                if (document.visibilityState === "visible") {
-                  // Update presence
-                  const trackStatus = await channel.track({
-                    device_id: deviceIdentifier,
-                    online_at: new Date().toISOString(),
-                  });
-                  
-                  if (trackStatus !== 'ok') {
-                    console.warn('⚠️ Failed to update presence. Reconnecting...');
-                    scheduleReconnect();
-                  }
-                  
-                  // Also update database directly for reliability
-                  try {
-                    await supabase
-                      .from("connected_devices")
-                      .update({ 
-                        status: "online", 
-                        last_seen: new Date().toISOString() 
-                      })
-                      .eq("id", deviceIdentifier);
-                  } catch (error) {
-                    console.error("Error updating device in DB:", error);
-                  }
-                }
-              }, 15000); // Send heartbeat every 15 seconds
-            } else {
-              console.error('❌ Failed to start presence tracking:', presenceTrackStatus);
-              setDeviceRealtimeStatus("error");
-              scheduleReconnect();
-            }
-          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            console.error('❌ Channel error:', status);
-            setDeviceRealtimeStatus("error");
-            scheduleReconnect();
-          }
-        });
-        
-        setDeviceChannel(channel);
-        presenceChannel = channel;
-        presenceChannelRef.current = channel;
-        
-        console.log('🎉 Presence channel setup completed successfully');
-        setupInProgressRef.current = false;
-        
-      } catch (error) {
-        console.error('❌ Error setting up device presence channel:', error);
-        setDeviceRealtimeStatus("error");
-        setupInProgressRef.current = false;
-        scheduleReconnect();
-      }
-    };
-    
-    // Schedule reconnection with exponential backoff
-    const scheduleReconnect = () => {
-      if (reconnectCount >= RECONNECT_MAX_ATTEMPTS) {
-        console.log(`🚫 Max reconnection attempts (${RECONNECT_MAX_ATTEMPTS}) reached`);
-        setDeviceRealtimeStatus("error");
-        return;
-      }
-      
-      const delay = Math.min(1000 * Math.pow(1.5, reconnectCount), 30000);
-      console.log(`⏱️ Scheduling reconnect in ${delay/1000}s (attempt ${reconnectCount + 1}/${RECONNECT_MAX_ATTEMPTS})...`);
-      
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-      
-      reconnectTimeout = setTimeout(() => {
-        setReconnectCount(prev => prev + 1);
-        setupDevicePresenceChannel();
-      }, delay);
-    };
 
     // Helper functions to get device information
     const getOperatingSystem = () => {
       const userAgent = window.navigator.userAgent;
-
       if (userAgent.indexOf("Windows") !== -1) return "Windows";
       if (userAgent.indexOf("Mac") !== -1) return "macOS";
       if (userAgent.indexOf("Linux") !== -1) return "Linux";
       if (userAgent.indexOf("Android") !== -1) return "Android";
-      if (
-        userAgent.indexOf("iOS") !== -1 ||
-        userAgent.indexOf("iPhone") !== -1 ||
-        userAgent.indexOf("iPad") !== -1
-      )
-        return "iOS";
-
+      if (userAgent.indexOf("iOS") !== -1 || userAgent.indexOf("iPhone") !== -1 || userAgent.indexOf("iPad") !== -1) return "iOS";
       return "Unknown OS";
     };
 
     const getBrowserInfo = () => {
       const userAgent = window.navigator.userAgent;
-
       if (userAgent.indexOf("Chrome") !== -1) return "Chrome";
       if (userAgent.indexOf("Firefox") !== -1) return "Firefox";
       if (userAgent.indexOf("Safari") !== -1) return "Safari";
       if (userAgent.indexOf("Edge") !== -1) return "Edge";
-      if (
-        userAgent.indexOf("MSIE") !== -1 ||
-        userAgent.indexOf("Trident/") !== -1
-      )
-        return "Internet Explorer";
-
+      if (userAgent.indexOf("MSIE") !== -1 || userAgent.indexOf("Trident/") !== -1) return "Internet Explorer";
       return "Unknown Browser";
     };
 
     const getDeviceType = () => {
       const userAgent = window.navigator.userAgent;
-
       if (/iPad|Tablet|PlayBook/i.test(userAgent)) return "tablet";
       if (/Mobile|Android|iPhone|iPod/i.test(userAgent)) return "mobile";
-
       return "desktop";
     };
 
@@ -524,155 +329,69 @@ export default function DisplayPage() {
       return null;
     };
 
-    // Initial setup for device presence channel
-    setupDevicePresenceChannel();
+    // Initial data send
+    collectAndSendDeviceData();
 
-    // Set up improved visibility change detection to update status
-    const handleVisibilityChange = async () => {
-      // Get stored device ID
-      const storedDeviceId = localStorage.getItem("device_id");
-      if (!storedDeviceId || !presenceChannelRef.current) return;
-
+    // Heartbeat every 15 seconds
+    heartbeatInterval = setInterval(async () => {
       if (document.visibilityState === "visible") {
-        // Page is visible again
-        console.log("📱 Page now visible, updating device status to online");
-        
-        // Update presence state
-        const trackStatus = await presenceChannelRef.current.track({
-          device_id: storedDeviceId,
-          online_at: new Date().toISOString(),
-        });
-        
-        if (trackStatus !== 'ok') {
-          console.warn("⚠️ Failed to update presence on visibility change. Reconnecting...");
-          scheduleReconnect();
-        }
-        
-        // Also update database directly
-        try {
-          const { error } = await supabase
-            .from("connected_devices")
-            .update({ status: "online", last_seen: new Date().toISOString() })
-            .eq("id", storedDeviceId);
-
-          if (error) throw error;
-        } catch (error) {
-          console.error("Error updating device status:", error);
-        }
-      } else {
-        // Page is hidden
-        console.log("📱 Page now hidden, updating presence");
-        
-        // Update presence (keep tracking even when hidden)
-        await presenceChannelRef.current.track({
-          device_id: storedDeviceId,
-          online_at: new Date().toISOString(),
-        });
-        
-        // Also update database
-        try {
-          const { error } = await supabase
-            .from("connected_devices")
-            .update({ 
-              status: "online", // Keep it online in DB but with an updated timestamp
-              last_seen: new Date().toISOString() 
-            })
-            .eq("id", storedDeviceId);
-
-          if (error) throw error;
-        } catch (error) {
-          console.error("Error updating device status:", error);
-        }
+        await collectAndSendDeviceData();
       }
-    };
+    }, 15000);
 
-    // Set up network status event listeners
-    const handleOnlineStatus = () => {
-      if (navigator.onLine) {
-        console.log("🌐 Browser back online, reconnecting device presence channel...");
-        if (deviceRealtimeStatus !== "connected") {
-          setReconnectCount(0); // Reset counter to force immediate reconnection
-          setupDevicePresenceChannel();
-        }
-      } else {
-        console.log("🌐 Browser offline, waiting for connection...");
-        setDeviceRealtimeStatus("error");
-      }
-    };
-
-    // Add event listeners
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("online", handleOnlineStatus);
-    window.addEventListener("offline", handleOnlineStatus);
-
-    // Cleanup on component unmount
-    return () => {
-      console.log('🧹 Component unmounting, cleaning up...');
-      
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-        heartbeatIntervalRef.current = null;
-      }
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("online", handleOnlineStatus);
-      window.removeEventListener("offline", handleOnlineStatus);
-
-      // Clean up presence channel
-      if (presenceChannelRef.current) {
-        // Untrack presence (this triggers leave event)
-        presenceChannelRef.current.untrack().then(() => {
-          console.log("✅ Device presence untracked");
-        });
-        
-        // Remove channel
-        supabase.removeChannel(presenceChannelRef.current);
-        presenceChannelRef.current = null;
-      }
-
-      // Get stored device ID
+    // Visibility change handler
+    const handleVisibilityChange = async () => {
       const storedDeviceId = localStorage.getItem("device_id");
       if (!storedDeviceId) return;
 
-      // Mark device as offline when leaving the page
-      supabase
-        .from("connected_devices")
-        .update({ status: "offline", last_seen: new Date().toISOString() })
-        .eq("id", storedDeviceId)
-        .then(({ error }) => {
-          if (error) console.error("Error marking device as offline:", error);
-        });
+      if (document.visibilityState === "visible") {
+        console.log("📱 Page now visible, updating device status to online");
+        await collectAndSendDeviceData();
+      }
     };
-  }, []); // Setup presence once and keep it stable
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Cleanup on component unmount
+    return () => {
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+      // Mark device as offline when leaving (use POST upsert)
+      const storedDeviceId = localStorage.getItem("device_id");
+      if (storedDeviceId) {
+        fetch('/api/devices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: storedDeviceId, name: storedDeviceId, status: "offline" }),
+        }).catch(err => console.error("Error marking device as offline:", err));
+      }
+    };
+  }, []); // Setup once
 
   // Also add a listener for ad changes to log which ads are being viewed
   useEffect(() => {
-    if (deviceId && currentAdIndex) {
-      // Log ad view to Supabase
-      supabase
-        .from("ad_views")
-        .insert([
-          {
-            device_id: deviceId,
-            ad_id: currentAdIndex.id,
-            timestamp: new Date().toISOString(),
-            time_slot: currentTimeSlot,
-          },
-        ])
-        .then(({ error }) => {
-          if (error) console.error("Error logging ad view:", error);
-        });
+    const currentAd = filteredAds[currentAdIndexIndex];
+    if (deviceId && currentAd) {
+      // Log ad view via API
+      fetch('/api/ad-views', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ad_id: currentAd.id,
+          device_id: deviceId,
+          time_slot: currentTimeSlot,
+        }),
+      }).catch(err => console.error("Error logging ad view:", err));
 
-      // Update current ad in device info
-      supabase
-        .from("connected_devices")
-        .update({ current_ad: currentAdIndex.title })
-        .eq("id", deviceId)
-        .then(({ error }) => {
-          if (error) console.error("Error updating current ad:", error);
-        });
+      // Update current ad in device info via upsert API
+      fetch('/api/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deviceId, name: deviceId, current_ad: currentAd.title, status: 'online' }),
+      }).catch(err => console.error("Error updating current ad:", err));
     }
-  }, [currentAdIndexIndex, filteredAds, currentTimeSlot]);
+  }, [currentAdIndexIndex, filteredAds, currentTimeSlot, deviceId]);
   // Load weather data immediately when component initializes
   useEffect(() => {
     const loadInitialWeatherData = async () => {
@@ -1004,25 +723,34 @@ export default function DisplayPage() {
       }
     }
   }, [allAds, filterAdsByCurrentTimeSlot]);
-  // Fetch advertisements with realtime subscription
+  // Fetch advertisements with polling (replaces Supabase realtime)
   useEffect(() => {
-    let channel;
+    let pollInterval;
 
-    async function setupRealtimeSubscription() {
+    async function fetchAds() {
       try {
-        // Initial fetch
-        const { data, error } = await supabase
-          .from("advertisements")
-          .select("*")
-          .eq("active", true)
-          .order("id");
-
-        if (error) throw error;
+        const res = await fetch('/api/ads?active=true');
+        if (!res.ok) throw new Error('Error al obtener anuncios');
+        const data = await res.json();
 
         if (data && data.length > 0) {
-          setAllAds(data);
-          const filtered = filterAdsByCurrentTimeSlot(data);
-          setFilteredAds(filtered);
+          // Compare with current state to detect changes
+          setAllAds(prev => {
+            const prevIds = prev.map(a => a.id).sort().join(',');
+            const newIds = data.map(a => a.id).sort().join(',');
+            const prevUpdated = prev.map(a => `${a.id}:${a.title}:${a.active}:${a.media_url}`).sort().join('|');
+            const newUpdated = data.map(a => `${a.id}:${a.title}:${a.active}:${a.media_url}`).sort().join('|');
+            
+            if (prevUpdated !== newUpdated) {
+              console.log('🔄 Ads data changed, updating...');
+              if (prevIds !== newIds) {
+                setRealtimeNotification({ type: 'update', message: 'Anuncios actualizados' });
+                setTimeout(() => setRealtimeNotification(null), 3000);
+              }
+              return data;
+            }
+            return prev;
+          });
         } else {
           const placeholderAd = {
             id: "placeholder",
@@ -1038,104 +766,24 @@ export default function DisplayPage() {
           setFilteredAds([placeholderAd]);
         }
 
-        // Setup realtime subscription
-        channel = supabase
-          .channel("advertisements_realtime")
-          .on(
-            "postgres_changes",
-            {
-              event: "*", // Listen to all events: INSERT, UPDATE, DELETE
-              schema: "public",
-              table: "advertisements",
-            },
-            (payload) => {
-              setRealtimeStatus("connected");
-
-              // Handle different types of changes
-              if (payload.eventType === "INSERT") {
-                setRealtimeNotification({
-                  type: "insert",
-                  message: "Nuevo anuncio agregado",
-                });
-                if (payload.new.active) {
-                  setAllAds((prev) => {
-                    const updated = [
-                      ...prev.filter((ad) => ad.id !== "placeholder"),
-                      payload.new,
-                    ].sort((a, b) => a.id - b.id);
-                    return updated;
-                  });
-                }
-              } else if (payload.eventType === "UPDATE") {
-                setRealtimeNotification({
-                  type: "update",
-                  message: "Anuncio actualizado",
-                });
-
-                setAllAds((prev) => {
-                  // Create a new array with the updated ad
-                  const updated = prev
-                    .map((ad) => (ad.id === payload.new.id ? payload.new : ad))
-                    .filter((ad) => ad.active); // Remove deactivated ads
-
-                  // Check if the currently displayed ad was updated
-                  const currentAdUpdated =
-                    currentAdIndexIndex < filteredAds.length &&
-                    filteredAds[currentAdIndexIndex].id === payload.new.id;
-
-                  // If the current ad was updated, force a re-render
-                  if (currentAdUpdated) {
-                    console.log("🔄 Current ad was updated, forcing re-render");
-                    // Force fade transition to refresh the display
-                    setFadeState("out");
-                    setTimeout(() => {
-                      setFadeState("in");
-                    }, 300);
-                  }
-
-                  return updated;
-                });
-              } else if (payload.eventType === "DELETE") {
-                setRealtimeNotification({
-                  type: "delete",
-                  message: "Anuncio eliminado",
-                });
-                setAllAds((prev) => {
-                  const updated = prev.filter((ad) => ad.id !== payload.old.id);
-                  return updated;
-                });
-              }
-
-              // Clear notification after 3 seconds
-              setTimeout(() => setRealtimeNotification(null), 3000);
-            }
-          )
-          .subscribe((status) => {
-            if (status === "SUBSCRIBED") {
-              setRealtimeStatus("connected");
-            } else if (status === "CLOSED") {
-              setRealtimeStatus("error");
-            } else if (status === "CHANNEL_ERROR") {
-              setRealtimeStatus("error");
-            }
-          });
-
+        setRealtimeStatus("connected");
         setLoading(false);
       } catch (err) {
-        console.error("❌ Error setting up realtime subscription:", err);
-        setError("Error al conectar con el sistema en tiempo real");
+        console.error("❌ Error fetching ads:", err);
+        setError("Error al conectar con el sistema");
         setRealtimeStatus("error");
         setLoading(false);
       }
     }
 
-    setupRealtimeSubscription();
+    // Initial fetch
+    fetchAds();
 
-    // Cleanup subscription on unmount
+    // Poll every 10 seconds
+    pollInterval = setInterval(fetchAds, 10000);
+
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, [filterAdsByCurrentTimeSlot]);
 

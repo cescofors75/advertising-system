@@ -1,15 +1,19 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 export async function proxy(req) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const { pathname } = req.nextUrl;
 
-  // Refresh session if expired - required for Server Components
-  // This will refresh the session cookie if it's expired
-  await supabase.auth.getSession();
+  // Protect admin routes - redirect to login if not authenticated
+  if (pathname.startsWith('/admin')) {
+    if (!token) {
+      const loginUrl = new URL('/auth/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
 
-  return res;
+  return NextResponse.next();
 }
 
 // Ensure the proxy is only called for relevant paths
@@ -21,7 +25,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - api/auth (NextAuth API routes)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

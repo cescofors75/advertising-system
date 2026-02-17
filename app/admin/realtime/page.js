@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import supabase from '@/lib/supabaseClient';
 
 import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw, 
   Search, Server, AlertCircle, Smartphone, Laptop, Battery, Activity, Eye,
@@ -9,7 +8,7 @@ import { Car, Monitor, Globe, Cpu, Wifi, MapPin, Calendar, Clock, RefreshCw,
 
 // Constants
 const OFFLINE_THRESHOLD_MINUTES = 5;
-const RECONNECT_MAX_ATTEMPTS = 10; // Maximum number of reconnection attempts
+const POLL_INTERVAL_MS = 10000; // Poll every 10 seconds
 
 export default function DeviceMonitoringDashboard() {
   const [devices, setDevices] = useState([]);
@@ -19,7 +18,7 @@ export default function DeviceMonitoringDashboard() {
   const [filter, setFilter] = useState('online'); // Por defecto solo mostrar activos
   const [sortBy, setSortBy] = useState('last_seen');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [realtimeStatus, setRealtimeStatus] = useState('disconnected');
+  const [realtimeStatus, setRealtimeStatus] = useState('connected');
   const [realtimeNotification, setRealtimeNotification] = useState(null);
   const [stats, setStats] = useState({
     totalDevices: 0,
@@ -28,80 +27,17 @@ export default function DeviceMonitoringDashboard() {
     totalAdViews: 0
   });
   const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [reconnectCount, setReconnectCount] = useState(0);
   
-  // Referencias para canales
-  const reconnectTimeoutRef = useRef(null);
-  const channelsRef = useRef({ devices: null, adViews: null });
-  const presenceChannel = useRef(null);
-  const isSettingUpRef = useRef(false);
+  // Referencias
+  const pollIntervalRef = useRef(null);
   
 
-// Función para actualizar dispositivos offline
- async function updateOfflineDevices() {
-  const thresholdTime = new Date(Date.now() - OFFLINE_THRESHOLD_MINUTES * 60 * 1000).toISOString();
-  
-  try {
-    const { error } = await supabase
-      .from('connected_devices')
-      .update({ status: 'offline' })
-      .eq('status', 'online')
-      .lt('last_seen', thresholdTime);
-      
-    if (error) {
-      console.error('Error updating offline devices:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (err) {
-    console.error('Error in updateOfflineDevices:', err);
-    return false;
-  }
-}
-
-// Función para obtener el conteo de dispositivos online
- async function getOnlineDevicesCount() {
-  try {
-    // Primero actualizar dispositivos offline
-    await updateOfflineDevices();
-    
-    // Luego contar dispositivos online
-    const { count, error } = await supabase
-      .from('connected_devices')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'online');
-      
-    if (error) {
-      console.error('Error counting online devices:', error);
-      return 0;
-    }
-    
-    return count || 0;
-  } catch (err) {
-    console.error('Error in getOnlineDevicesCount:', err);
-    return 0;
-  }
-}
-
-// Función para obtener todos los dispositivos
+// Función para obtener todos los dispositivos vía API
  async function getAllDevices() {
   try {
-    // Primero actualizar dispositivos offline
-    await updateOfflineDevices();
-    
-    // Obtener todos los dispositivos
-    const { data, error } = await supabase
-      .from('connected_devices')
-      .select('*')
-      .order('last_seen', { ascending: false });
-      
-    if (error) {
-      console.error('Error fetching devices:', error);
-      return [];
-    }
-    
-    return data || [];
+    const res = await fetch('/api/devices');
+    if (!res.ok) throw new Error('Error fetching devices');
+    return await res.json();
   } catch (err) {
     console.error('Error in getAllDevices:', err);
     return [];
@@ -138,7 +74,7 @@ function isDeviceOnline(lastSeenDate) {
     }
     return device.status || 'offline';
   };
-  // Función para cargar datos desde Supabase
+  // Función para cargar datos desde API
   const loadData = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setLoading(true);
@@ -147,40 +83,38 @@ function isDeviceOnline(lastSeenDate) {
     try {
       console.log('🔄 Fetching latest device data...');
       
-      // Obtener todos los dispositivos usando el servicio compartido
+      // Obtener todos los dispositivos usando la API
       const devicesData = await getAllDevices();
       
       console.log(`✅ Loaded ${devicesData.length} devices`);
-      console.log('Device details:', devicesData.map(d => ({
-        name: d.name,
-        status: d.status,
-        last_seen: d.last_seen,
-        ip: d.ip
-      })));
       
       setDevices(devicesData);
       
-      // Calcular estadísticas usando el servicio compartido
+      // Calcular estadísticas
       const stats = calculateDeviceStats(devicesData);
       setStats(prev => ({ ...prev, ...stats }));
       
-      // Obtener conteo de visualizaciones
-      const { count, error: adViewsError } = await supabase
-        .from('ad_views')
-        .select('*', { count: 'exact', head: true });
-        
-      if (!adViewsError && count !== null) {
-        console.log(`✅ Total ad views: ${count}`);
-        setStats(prev => ({ ...prev, totalAdViews: count }));
+      // Obtener conteo de visualizaciones vía API
+      try {
+        const viewsRes = await fetch('/api/ad-views?grouped=by_ad');
+        if (viewsRes.ok) {
+          const viewsData = await viewsRes.json();
+          const totalViews = viewsData.reduce((sum, item) => sum + (item.view_count || 0), 0);
+          setStats(prev => ({ ...prev, totalAdViews: totalViews }));
+        }
+      } catch (viewErr) {
+        console.error('Error fetching ad views:', viewErr);
       }
       
       setLastUpdate(new Date());
       setError(null);
+      setRealtimeStatus('connected');
       return true;
       
     } catch (err) {
       console.error('❌ Error loading data:', err);
       setError(`Error al cargar datos: ${err.message}`);
+      setRealtimeStatus('error');
       return false;
     } finally {
       if (showLoading) {
@@ -189,506 +123,28 @@ function isDeviceOnline(lastSeenDate) {
     }
   }, []);
   
-  // Cargar datos iniciales
+  // Cargar datos iniciales y configurar polling
   useEffect(() => {
     console.log('🚀 Initializing dashboard...');
     
     // Cargar datos inicialmente
     loadData();
     
+    // Configurar polling para actualizaciones periódicas
+    pollIntervalRef.current = setInterval(() => {
+      loadData(false); // false = don't show loading spinner
+    }, POLL_INTERVAL_MS);
+    
     return () => {
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
   }, [loadData]);
 
   
-  // Configurar suscripciones de realtime y presence como método principal
-  useEffect(() => {
-    let isMounted = true;
-    
-    const cleanupChannels = async () => {
-      console.log('🧹 Cleaning up channels...');
-      
-      // IMPORTANTE: Solo unsubscribe, NO removeChannel para evitar cerrar canales durante React Strict Mode
-      if (presenceChannel.current) {
-        try {
-          await presenceChannel.current.unsubscribe();
-          console.log('✅ Presence channel unsubscribed');
-        } catch (err) {
-          console.error('⚠️ Error unsubscribing presence channel:', err);
-        }
-      }
-
-      if (channelsRef.current.devices) {
-        try {
-          await channelsRef.current.devices.unsubscribe();
-          console.log('✅ Devices channel unsubscribed');
-        } catch (err) {
-          console.error('⚠️ Error unsubscribing devices channel:', err);
-        }
-      }
-      
-      if (channelsRef.current.adViews) {
-        try {
-          await channelsRef.current.adViews.unsubscribe();
-          console.log('✅ Ad views channel unsubscribed');
-        } catch (err) {
-          console.error('⚠️ Error unsubscribing ad views channel:', err);
-        }
-      }
-    };
-    
-    const fetchDeviceWithRetry = async (deviceId, attempts = 3, delayMs = 500) => {
-      for (let attempt = 1; attempt <= attempts; attempt += 1) {
-        const { data } = await supabase
-          .from('connected_devices')
-          .select('*')
-          .eq('id', deviceId)
-          .single();
-        if (data) return data;
-        if (attempt < attempts) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
-      }
-      return null;
-    };
-
-    const setupRealtimeChannels = async () => {
-      if (isSettingUpRef.current) {
-        console.log('⏸️ Setup already in progress, skipping...');
-        return;
-      }
-      
-      // Si ya hay un canal conectado, no recrear
-      if (presenceChannel.current) {
-        const currentState = presenceChannel.current.state;
-        console.log('📍 Existing channel state:', currentState);
-        
-        if (currentState === 'joined' || realtimeStatus === 'connected') {
-          console.log('✅ Realtime already connected, skipping setup');
-          isSettingUpRef.current = false;
-          return;
-        }
-      }
-      
-      isSettingUpRef.current = true;
-      if (!isMounted) return;
-      
-      try {
-        console.log(`🔌 Setting up realtime channels (attempt ${reconnectCount + 1})...`);
-        console.log('🔌 Supabase URL:', supabase.supabaseUrl);
-        setRealtimeStatus('connecting');
-        
-        // IMPORTANTE: NO limpiar canales aquí para evitar race conditions con React Strict Mode
-        // El cleanup se maneja solo en el return del useEffect
-
-        // Crear canal de presence con timestamp para evitar conflictos en Strict Mode
-        console.log('📡 Creating presence channel...');
-        const channelName = 'device_presence';
-        const devicePresence = supabase.channel(channelName);
-        
-        // Guardar referencia inmediatamente
-        presenceChannel.current = devicePresence;
-        
-        console.log('📡 Presence channel created, setting up event handlers...');
-
-        // Configurar eventos de presence
-        devicePresence
-          .on('presence', { event: 'sync' }, () => {
-            if (!isMounted) return;
-            
-            console.log('🎯 SYNC EVENT TRIGGERED!');
-            const state = devicePresence.presenceState();
-            console.log('👥 Presence sync - Full state keys:', Object.keys(state));
-            console.log('🔍 Realtime raw state:', JSON.stringify(state, null, 2));
-            
-            // Actualizar estado de los dispositivos basado en presence
-            const onlineDeviceIds = new Set();
-            const onlineDevicesData = [];
-            
-            // Iterar sobre cada presence key (cada cliente conectado)
-            Object.entries(state).forEach(([presenceKey, presences]) => {
-              // presences es un array de payloads para esta key
-              presences.forEach(presence => {
-                console.log('🔍 Realtime presence:', presence);
-                // Solo procesar si tiene device_id y no es admin
-                if (presence.device_id && presence.type !== 'admin') {
-                  console.log('✅ Realtime adding device:', presence.device_id);
-                  onlineDeviceIds.add(presence.device_id);
-                  onlineDevicesData.push({
-                    id: presence.device_id,
-                    status: 'online',
-                    last_seen: presence.online_at || new Date().toISOString()
-                  });
-                } else {
-                  console.log('❌ Realtime filtering out:', presence.device_id, 'type:', presence.type);
-                }
-              });
-            });
-            
-            console.log(`📊 Presence sync: ${onlineDeviceIds.size} devices online`, Array.from(onlineDeviceIds));
-            
-            // Actualizar lista de dispositivos
-            setDevices(prevDevices => {
-              const updatedDevices = prevDevices.map(device => {
-                const isOnline = onlineDeviceIds.has(device.id);
-                // Si está en presence, usar esa info. Si no, dejarlo como está o marcar offline?
-                // Vamos a ser estrictos: si sync dice que no está, es offline.
-                // EXCEPTO si acabamos de cargar y sync está vacío? No, sync es autoritario.
-                return {
-                  ...device,
-                  status: isOnline ? 'online' : 'offline',
-                  last_seen: isOnline ? (onlineDevicesData.find(d => d.id === device.id)?.last_seen || new Date().toISOString()) : device.last_seen
-                };
-              });
-              
-              // Añadir nuevos dispositivos que aparecen en presence pero no en la lista
-              const existingIds = new Set(prevDevices.map(d => d.id));
-              onlineDevicesData.forEach(onlineDevice => {
-                if (!existingIds.has(onlineDevice.id)) {
-                  console.log(`✨ New device detected in presence: ${onlineDevice.id}`);
-                  // Fetch full device data
-                  fetchDeviceWithRetry(onlineDevice.id).then(deviceData => {
-                    if (deviceData) {
-                      setDevices(prev => {
-                         const exists = prev.some(d => d.id === onlineDevice.id);
-                         if (exists) return prev;
-                         return [...prev, { ...deviceData, status: 'online' }];
-                      });
-                    }
-                  });
-                }
-              });
-              
-              return updatedDevices;
-            });
-            
-            // Actualizar estadísticas
-            setStats(prev => ({
-              ...prev,
-              onlineDevices: onlineDeviceIds.size
-            }));
-          })
-          .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-            if (!isMounted) return;
-            console.log('🟢 Device joined - Key:', key, 'Presences:', newPresences);
-            
-            // Actualizar estado después del join
-            const state = devicePresence.presenceState();
-            const onlineDeviceIds = new Set();
-            
-            Object.values(state).forEach((presences) => {
-              presences.forEach((presence) => {
-                if (presence.device_id && presence.type !== 'admin') {
-                  onlineDeviceIds.add(presence.device_id);
-                }
-              });
-            });
-            
-            console.log(`📊 After join: ${onlineDeviceIds.size} devices online`, Array.from(onlineDeviceIds));
-            
-            setDevices(prevDevices => 
-              prevDevices.map(device => ({
-                ...device,
-                status: onlineDeviceIds.has(device.id) ? 'online' : device.status
-              }))
-            );
-            
-            setStats(prev => ({
-              ...prev,
-              onlineDevices: onlineDeviceIds.size
-            }));
-          })
-          .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-            if (!isMounted) return;
-            console.log('🔴 Device left - Key:', key, 'Presences:', leftPresences);
-            
-            // Actualizar estado después del leave
-            const state = devicePresence.presenceState();
-            const onlineDeviceIds = new Set();
-            
-            Object.values(state).forEach((presences) => {
-              presences.forEach((presence) => {
-                if (presence.device_id && presence.type !== 'admin') {
-                  onlineDeviceIds.add(presence.device_id);
-                }
-              });
-            });
-            
-            console.log(`📊 After leave: ${onlineDeviceIds.size} devices online`, Array.from(onlineDeviceIds));
-            
-            setDevices(prevDevices => 
-              prevDevices.map(device => ({
-                ...device,
-                status: onlineDeviceIds.has(device.id) ? 'online' : 'offline',
-                last_seen: onlineDeviceIds.has(device.id) ? new Date().toISOString() : device.last_seen
-              }))
-            );
-            
-            setStats(prev => ({
-              ...prev,
-              onlineDevices: onlineDeviceIds.size
-            }));
-          });
-
-        // Suscribirse al canal usando el patrón estándar
-        console.log('📡 Subscribing to presence channel...');
-        
-        devicePresence.subscribe(async (status) => {
-          if (!isMounted) return;
-          
-          console.log(`📡 Presence channel subscription status: ${status}`);
-          
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ Presence channel subscribed successfully');
-            setRealtimeStatus('connected');
-            setReconnectCount(0);
-            
-            // Registrar presencia del admin
-            console.log('📝 Tracking admin presence...');
-            try {
-              const trackResult = await devicePresence.track({
-                online_at: new Date().toISOString(),
-                status: 'online',
-                type: 'admin'
-              });
-              console.log('✅ Admin presence tracked, result:', trackResult);
-            } catch (e) {
-              console.error('❌ Error tracking admin presence:', e);
-            }
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Presence channel error');
-            setRealtimeStatus('error');
-            scheduleReconnect();
-          } else if (status === 'TIMED_OUT') {
-            console.error('❌ Presence channel timed out');
-            setRealtimeStatus('error');
-            scheduleReconnect();
-          } else if (status === 'CLOSED') {
-            console.warn('⚠️ Presence channel closed');
-          }
-        });
-
-        // ---------------------------------------------------------
-        // 2. DB CHANGES CHANNEL SETUP
-        // ---------------------------------------------------------
-        const devicesChannel = supabase
-          .channel(`devices-db-changes-${Date.now()}`)
-          .on('postgres_changes', 
-            {
-              event: '*',
-              schema: 'public',
-              table: 'connected_devices'
-            }, 
-            (payload) => {
-              if (!isMounted) return;
-              
-              console.log('📡 Device update received:', payload?.eventType || 'unknown', payload?.new?.id || 'unknown-id');
-              
-              // Validar que payload existe y tiene las propiedades necesarias
-              if (!payload || !payload.eventType) {
-                console.warn('Invalid payload received:', payload);
-                return;
-              }
-              
-              try {
-                // Solo mostrar notificación para cambios importantes
-                const isMinorUpdate = payload.eventType === 'UPDATE' && 
-                                    payload.new && 
-                                    Object.keys(payload.new).length <= 3;
-                
-                if (!isMinorUpdate && payload.eventType) {
-                  setRealtimeNotification({
-                    type: payload.eventType.toLowerCase(),
-                    message: payload.eventType === 'INSERT' ? 'Nuevo dispositivo conectado' :
-                             payload.eventType === 'UPDATE' ? 'Dispositivo actualizado' :
-                             payload.eventType === 'DELETE' ? 'Dispositivo eliminado' :
-                             'Cambio detectado'
-                  });
-                  
-                  // Limpiar notificación después de 3 segundos
-                  setTimeout(() => {
-                    if (isMounted) setRealtimeNotification(null);
-                  }, 3000);
-                }
-                
-                // Actualizar datos en el estado según el tipo de evento
-                if (payload.eventType === 'INSERT') {
-                  // Añadir nuevo dispositivo al estado
-                  setDevices(prevDevices => [payload.new, ...prevDevices]);
-                  // Actualizar estadísticas
-                  setStats(prev => ({
-                    ...prev,
-                    totalDevices: prev.totalDevices + 1,
-                    onlineDevices: payload.new.status === 'online' ? prev.onlineDevices + 1 : prev.onlineDevices
-                  }));
-                } else if (payload.eventType === 'UPDATE') {
-                  // Actualizar dispositivo existente
-                  setDevices(prevDevices => 
-                    prevDevices.map(device => 
-                      device.id === payload.new.id ? {...device, ...payload.new} : device
-                    )
-                  );
-                  // Si el estado cambió, actualizar contadores
-                  if (payload.old.status !== payload.new.status) {
-                    setStats(prev => ({
-                      ...prev,
-                      onlineDevices: 
-                        payload.new.status === 'online' 
-                          ? prev.onlineDevices + 1 
-                          : Math.max(0, prev.onlineDevices - 1)
-                    }));
-                  }
-                } else if (payload.eventType === 'DELETE') {
-                  // Eliminar dispositivo del estado
-                  setDevices(prevDevices => 
-                    prevDevices.filter(device => device.id !== payload.old.id)
-                  );
-                  // Actualizar estadísticas
-                  setStats(prev => ({
-                    ...prev,
-                    totalDevices: Math.max(0, prev.totalDevices - 1),
-                    onlineDevices: payload.old.status === 'online' 
-                      ? Math.max(0, prev.onlineDevices - 1) 
-                      : prev.onlineDevices
-                  }));
-                }
-                
-                // Actualizar timestamp de última actualización
-                setLastUpdate(new Date());
-              } catch (err) {
-                console.error('Error processing realtime update:', err);
-                // Si hay un error procesando los datos, mejor recargar todo
-                loadData(false);
-              }
-            }
-          )
-          .subscribe((status) => {
-            if (!isMounted) return;
-            
-            console.log('📡 Devices channel status:', status);
-            
-            if (status === 'SUBSCRIBED') {
-              console.log('✅ Connected to devices channel');
-              // NOTA: NO intentar track() aquí - este canal es solo postgres_changes
-            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              console.error('❌ Devices channel error:', status);
-            }
-          });
-          
-        channelsRef.current.devices = devicesChannel;
-        
-        // Canal para visualizaciones de anuncios
-        const adViewsChannel = supabase
-          .channel(`ad-views-${Date.now()}`)
-          .on('postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'ad_views'
-            },
-            (payload) => {
-              if (!isMounted) return;
-              console.log('📡 Ad view recorded');
-              
-              // Incrementar contador de visualizaciones
-              setStats(prev => ({
-                ...prev,
-                totalAdViews: prev.totalAdViews + 1
-              }));
-            }
-          )
-          .subscribe((status) => {
-            if (!isMounted) return;
-            console.log('📡 Ad views channel status:', status);
-            
-            if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-              console.error('❌ Ad views channel error:', status);
-              // Reconectar solo este canal específico
-              setTimeout(() => {
-                if (isMounted && channelsRef.current.adViews) {
-                  console.log('🔄 Reconnecting ad views channel...');
-                  channelsRef.current.adViews.subscribe();
-                }
-              }, 5000);
-            }
-          });
-          
-        channelsRef.current.adViews = adViewsChannel;
-        
-      } catch (err) {
-        console.error('❌ Error setting up realtime:', err);
-        setError(`Error de conexión realtime: ${err.message}`);
-        setRealtimeStatus('error');
-        scheduleReconnect();
-      } finally {
-        isSettingUpRef.current = false;
-      }
-    };
-    
-    // Programar reconexión con backoff exponencial mejorado
-    const scheduleReconnect = () => {
-      if (!isMounted || reconnectCount >= RECONNECT_MAX_ATTEMPTS) {
-        console.log(`🚫 Max reconnection attempts (${RECONNECT_MAX_ATTEMPTS}) reached or component unmounted`);
-        setRealtimeStatus('disabled');
-        return;
-      }
-      
-      const delay = Math.min(1000 * Math.pow(1.5, reconnectCount), 30000);
-      console.log(`⏱️ Scheduling reconnect in ${delay/1000}s (attempt ${reconnectCount + 1}/${RECONNECT_MAX_ATTEMPTS})...`);
-      
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      
-      reconnectTimeoutRef.current = setTimeout(() => {
-        if (isMounted) {
-          setReconnectCount(prev => prev + 1);
-          setupRealtimeChannels();
-        }
-      }, delay);
-    };
-    
-    // Manejador de eventos de conexión a internet
-    const handleOnlineStatus = () => {
-      if (navigator.onLine) {
-        console.log('🌐 Browser back online, reconnecting...');
-        if (realtimeStatus !== 'connected') {
-          setReconnectCount(0); // Reiniciar contador para forzar reconexión inmediata
-          setupRealtimeChannels();
-        }
-      } else {
-        console.log('🌐 Browser offline, waiting for connection...');
-        setRealtimeStatus('error');
-      }
-    };
-    
-    // Añadir event listeners para detectar cambios en la conexión
-    window.addEventListener('online', handleOnlineStatus);
-    window.addEventListener('offline', handleOnlineStatus);
-    
-    // Iniciar conexión realtime
-    setupRealtimeChannels();
-    
-    // Cleanup
-    return () => {
-      isMounted = false;
-      cleanupChannels();
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      window.removeEventListener('online', handleOnlineStatus);
-      window.removeEventListener('offline', handleOnlineStatus);
-    };
-  }, [reconnectCount]); // Removed loadData to prevent infinite re-renders
-  
-  // Reconexión manual de realtime
+  // Reconexión manual / refresco
   const handleReconnect = () => {
-    setRealtimeNotification({ type: 'update', message: 'Reconectando tiempo real...' });
-    
-    // Reiniciar contador para forzar reconexión inmediata
-    setReconnectCount(0);
-    
+    setRealtimeNotification({ type: 'update', message: 'Actualizando datos...' });
+    loadData(false);
     setTimeout(() => setRealtimeNotification(null), 3000);
   };
   
@@ -768,36 +224,22 @@ function isDeviceOnline(lastSeenDate) {
 
   
   
-  // Obtener estado de conexión realtime
+  // Obtener estado de conexión
   const getRealtimeStatusDisplay = () => {
     switch (realtimeStatus) {
       case 'connected':
         return {
           color: 'emerald',
-          text: '🟢 Tiempo real activo',
-          description: 'Actualizaciones instantáneas',
+          text: '🟢 Polling activo',
+          description: `Actualizaciones cada ${POLL_INTERVAL_MS / 1000}s`,
           icon: <CheckCircle className="w-4 h-4 mr-2" />
-        };
-      case 'connecting':
-        return {
-          color: 'amber',
-          text: '🟡 Conectando...',
-          description: 'Estableciendo conexión',
-          icon: <Activity className="w-4 h-4 mr-2 animate-pulse" />
         };
       case 'error':
         return {
           color: 'red',
-          text: '🔴 Sin tiempo real',
-          description: reconnectCount < RECONNECT_MAX_ATTEMPTS ? `Reintento ${reconnectCount}/${RECONNECT_MAX_ATTEMPTS}` : 'Reconexión fallida',
+          text: '🔴 Error de conexión',
+          description: 'No se pueden obtener datos',
           icon: <AlertCircle className="w-4 h-4 mr-2" />
-        };
-      case 'disabled':
-        return {
-          color: 'slate',
-          text: '⚪ Desconectado',
-          description: 'Conexión desactivada',
-          icon: <Clock className="w-4 h-4 mr-2" />
         };
       default:
         return {
@@ -905,7 +347,7 @@ function isDeviceOnline(lastSeenDate) {
               <span className="text-lg font-medium">{realtimeDisplay.text}</span>
               <span className="text-sm text-slate-400">{realtimeDisplay.description}</span>
             </div>
-            {realtimeStatus === 'error' && reconnectCount < RECONNECT_MAX_ATTEMPTS && (
+            {realtimeStatus === 'error' && (
               <button 
                 onClick={handleReconnect}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs"

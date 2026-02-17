@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import supabase from '@/lib/supabaseClient';
 import AdList from '@/components/admin/AdList';
 import AdForm from '@/components/admin/AdForm';
 import TimeSlotTabs from '@/components/admin/TimeSlotTabs';
@@ -25,12 +24,9 @@ export default function AdminPage() {
       setLoading(true);
       console.log('Obteniendo anuncios...');
       
-      const { data, error } = await supabase
-        .from('advertisements')
-        .select('*')
-        .order('id');
-
-      if (error) throw error;
+      const res = await fetch('/api/ads');
+      if (!res.ok) throw new Error('Error al obtener anuncios');
+      const data = await res.json();
       
       console.log('Datos obtenidos:', data);
       
@@ -56,26 +52,10 @@ export default function AdminPage() {
   const handleDelete = async (id) => {
     if (window.confirm('¿Está seguro que desea eliminar este anuncio?')) {
       try {
-        // Eliminar el anuncio
-        const { error } = await supabase
-          .from('advertisements')
-          .delete()
-          .eq('id', id);
-          
-        if (error) throw error;
-        
-        // Si el anuncio tiene multimedia, eliminarlo del almacenamiento
-        if (currentAd && currentAd.media_url) {
-          // Extraer la ruta del archivo de la URL
-          const urlParts = currentAd.media_url.split('/');
-          const fileName = urlParts[urlParts.length - 1];
-          
-          const { error: storageError } = await supabase
-            .storage
-            .from('advertisements')
-            .remove([fileName]);
-            
-          if (storageError) console.error('Error al eliminar archivo:', storageError);
+        const res = await fetch(`/api/ads/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Error al eliminar');
         }
         
         // Actualizar la lista
