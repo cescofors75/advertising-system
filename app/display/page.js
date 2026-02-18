@@ -265,8 +265,8 @@ export default function DisplayPage() {
         });
         console.log("✅ Device info updated successfully");
 
-        // If there's a current ad, log the view
-        if (currentAd) {
+        // If there's a current ad with a valid numeric id, log the view
+        if (currentAd && typeof currentAd.id === 'number') {
           const adViewKey = `ad_view_${currentAd.id}_${currentAdIndexIndex}`;
           if (!localStorage.getItem(adViewKey)) {
             await fetch('/api/ad-views', {
@@ -372,8 +372,8 @@ export default function DisplayPage() {
   // Also add a listener for ad changes to log which ads are being viewed
   useEffect(() => {
     const currentAd = filteredAds[currentAdIndexIndex];
-    if (deviceId && currentAd) {
-      // Log ad view via API
+    if (deviceId && currentAd && typeof currentAd.id === 'number') {
+      // Log ad view via API (skip placeholder ads)
       fetch('/api/ad-views', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1352,7 +1352,7 @@ export default function DisplayPage() {
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
       
       {/* Main Content Area - 80% width */}
-      <div className="w-[80%] h-full relative overflow-hidden">
+      <div className="w-[80%] h-full relative overflow-hidden flex flex-col">
       {realtimeNotification && (
         <div className="fixed top-4 right-4 z-50 animate-bounce">
           <div
